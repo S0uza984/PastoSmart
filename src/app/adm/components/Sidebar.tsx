@@ -30,7 +30,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const handleLogout = () => {
     // Aqui você pode adicionar lógica de logout (limpar tokens, etc.)
-    router.push('/login'); // Redireciona para tela de login
+    router.push('/'); // Redireciona para tela de login
   };
 
   return (
