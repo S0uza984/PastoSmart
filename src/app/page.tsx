@@ -3,14 +3,12 @@
 import React, { useState } from "react";
 import Image from "next/image";
 
-
 interface FormData {
   name: string;
   email: string;
   password: string;
   confirmPassword: string;
-  phone: string;
-  property: string;
+  role: string;
 }
 
 export default function PastoSmartAuth() {
@@ -20,11 +18,10 @@ export default function PastoSmartAuth() {
     email: "",
     password: "",
     confirmPassword: "",
-    phone: "",
-    property: "",
+    role: "",
   });
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -35,6 +32,10 @@ export default function PastoSmartAuth() {
     if (!isLogin) {
       if (formData.password !== formData.confirmPassword) {
         alert("As senhas não conferem.");
+        return;
+      }
+      if (!formData.role) {
+        alert("Por favor, selecione seu cargo no sistema.");
         return;
       }
       // TODO: chamada de API para cadastro
@@ -100,25 +101,17 @@ export default function PastoSmartAuth() {
                     </div>
 
                     <div>
-                      <input
-                        type="text"
-                        name="property"
-                        placeholder="Nome da propriedade"
-                        value={formData.property}
+                      <select
+                        name="role"
+                        value={formData.role}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-green-600 focus:outline-none transition-colors"
-                      />
-                    </div>
-
-                    <div>
-                      <input
-                        type="tel"
-                        name="phone"
-                        placeholder="Telefone"
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-green-600 focus:outline-none transition-colors"
-                      />
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-green-600 focus:outline-none transition-colors bg-white"
+                        required
+                      >
+                        <option value="">Selecione seu cargo no sistema</option>
+                        <option value="admin">Administrador</option>
+                        <option value="peao">Peão</option>
+                      </select>
                     </div>
                   </>
                 )}
