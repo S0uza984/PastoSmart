@@ -13,3 +13,64 @@ datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
+
+// Usuários
+model User {
+  id       Int     @id @default(autoincrement())
+  email    String  @unique
+  senha    String
+  admin    Boolean
+  createdAt DateTime @default(now())
+}
+
+// Lotes
+model Lote {
+  id           Int       @id @default(autoincrement())
+  codigo       String
+  chegada      DateTime
+  custo        Float
+  data_venda   DateTime?
+  
+  // Relações
+  bois         Boi[]
+  vendas       Venda[]
+  pesoHistorico PesoHistorico[]
+}
+
+// Bois
+model Boi {
+  id         Int       @id @default(autoincrement())
+  peso       Float
+  vacina     String?
+  status     String
+  alerta     String?
+  
+  // Relações
+  loteId     Int
+  Lote       Lote      @relation(fields: [loteId], references: [id])
+  historico  PesoHistorico[]
+}
+
+// Histórico de pesos
+model PesoHistorico {
+  id        Int      @id @default(autoincrement())
+  peso      Float
+  dataPesagem DateTime @default(now())
+  
+  // Relações
+  boiId     Int
+  Boi       Boi      @relation(fields: [boiId], references: [id])
+  loteId    Int
+  Lote      Lote     @relation(fields: [loteId], references: [id])
+}
+
+// Vendas
+model Venda {
+  id       Int      @id @default(autoincrement())
+  dataVenda DateTime @default(now())
+  valor    Float
+  
+  // Relação
+  loteId   Int
+  Lote     Lote     @relation(fields: [loteId], references: [id])
+}
