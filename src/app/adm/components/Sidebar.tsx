@@ -1,34 +1,37 @@
 import React from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { Menu, X, Home, ShoppingCart, BarChart3, Users } from 'lucide-react';
+import { Home, ShoppingCart, BarChart3, LogOut } from 'lucide-react';
 
 // Tipagem das Props
 interface SidebarProps {
   userType: 'adm' | 'peao';
   isSidebarOpen: boolean;
-  setUserType: (type: 'adm' | 'peao') => void;
   setIsSidebarOpen: (isOpen: boolean) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
   userType,
   isSidebarOpen,
-  setUserType,
   setIsSidebarOpen,
 }) => {
   const router = useRouter();
   const pathname = usePathname();
+  
   const menuItems = userType === 'adm'
     ? [
         { icon: Home, label: 'Início', route: '/adm' },
         { icon: ShoppingCart, label: 'Vendas', route: '/adm/vendas' },
-        { icon: BarChart3, label: 'Lotes', route: '/adm/lotes' },
-        { icon: Users, label: 'Adicionar', route: '/adm/adicionar' }
+        { icon: BarChart3, label: 'Lotes', route: '/adm/lote' }
       ]
     : [
         { icon: Home, label: 'Início', route: '/adm' },
-        { icon: BarChart3, label: 'Lotes', route: '/adm/lotes' }
+        { icon: BarChart3, label: 'Lotes', route: '/adm/lote' }
       ];
+
+  const handleLogout = () => {
+    // Aqui você pode adicionar lógica de logout (limpar tokens, etc.)
+    router.push('/login'); // Redireciona para tela de login
+  };
 
   return (
     <div className={`${isSidebarOpen ? 'w-64' : 'w-0'} bg-green-800 text-white transition-all duration-300 overflow-hidden flex-shrink-0`}>
@@ -64,11 +67,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </nav>
 
         <button
-          onClick={() => setUserType(userType === 'adm' ? 'peao' : 'adm')}
+          onClick={handleLogout}
           className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-green-700 mt-8 transition-colors"
         >
-          <Users size={20} />
-          <span>Trocar Usuário</span>
+          <LogOut size={20} />
+          <span>Sair</span>
         </button>
       </div>
     </div>

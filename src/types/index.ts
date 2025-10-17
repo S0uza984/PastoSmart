@@ -3,8 +3,6 @@
 export interface Boi {
     id: number;
     peso: number;
-    vacinado: boolean;
-    dataVacinacao: string | null;
 }
 
 export interface Lote {
@@ -12,6 +10,8 @@ export interface Lote {
     nome: string;
     dataChegada: string;
     custo: number;
+    vacinado: boolean;
+    dataVacinacao: string | null;
     bois: Boi[];
 }
 

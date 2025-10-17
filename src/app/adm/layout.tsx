@@ -18,7 +18,6 @@ export default function AdminLayout({
       <Sidebar
         userType={userType}
         isSidebarOpen={isSidebarOpen}
-        setUserType={setUserType}
         setIsSidebarOpen={setIsSidebarOpen}
       />
 
