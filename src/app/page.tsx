@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 interface FormData {
   name: string;
@@ -12,6 +13,8 @@ interface FormData {
 }
 
 export default function PastoSmartAuth() {
+  const router = useRouter();
+
   const [isLogin, setIsLogin] = useState<boolean>(true);
   const [formData, setFormData] = useState<FormData>({
     name: "",
@@ -20,31 +23,85 @@ export default function PastoSmartAuth() {
     confirmPassword: "",
     role: "",
   });
+  const [loading, setLoading] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!isLogin) {
+      if (!isValidEmail(formData.email)) {
+        alert("Informe um e‑mail válido para cadastro.");
+        return;
+      }
       if (formData.password !== formData.confirmPassword) {
         alert("As senhas não conferem.");
         return;
       }
       if (!formData.role) {
-        alert("Por favor, selecione seu cargo no sistema.");
+        alert("Selecione seu cargo.");
         return;
       }
-      // TODO: chamada de API para cadastro
-      console.log("Register attempt:", formData);
-      return;
+    } else {
+      if (formData.email.includes("@") && !isValidEmail(formData.email)) {
+        alert("E-mail inválido.");
+        return;
+      }
     }
 
-    // TODO: chamada de API para login
-    console.log("Login attempt:", { email: formData.email, password: formData.password });
+    try {
+      setLoading(true);
+
+      const payload = {
+        ...formData,
+        isLogin,
+        email: String(formData.email).trim().toLowerCase(), // normaliza email
+      };
+
+      const res = await fetch("/api/cadastro", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const body = await res.json().catch(() => ({ message: res.statusText || "Erro" }));
+
+      if (!res.ok) {
+        alert("Erro: " + (body.message || "Resposta do servidor não OK"));
+        return;
+      }
+
+      console.log("Resposta do servidor:", body);
+
+      // comportamento pós-sucesso:
+      if (!isLogin) {
+        // cadastro: limpar formulário e voltar para tela de login
+        setFormData({
+          name: "",
+          email: "",
+          password: "",
+          confirmPassword: "",
+          role: "",
+        });
+        setIsLogin(true);
+        alert("Cadastro realizado com sucesso.");
+        return;
+      }
+
+      // login: redirecionar para área administrativa
+      alert("Login realizado.");
+      router.push("/adm");
+    } catch (err) {
+      console.error(err);
+      alert("Falha ao comunicar com o servidor.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -52,22 +109,22 @@ export default function PastoSmartAuth() {
       <div className="w-full max-w-5xl bg-white rounded-2xl shadow-2xl overflow-hidden">
         <div className="grid md:grid-cols-2 gap-0">
           {/* Lado Esquerdo - Logo e Branding */}
-          <div className="bg-white p-12 flex flex-col items-center justify-center border-r-4 border-green-600">
+          <div className="bg-white p-8 flex flex-col items-center justify-center border-r-4 border-green-600">
             <div className="mb-4">
-              <div className="w-110 h-110 rounded-lg p-4 flex items-center justify-center">
+              <div className="w-96 h-96 rounded-lg p-2 flex items-center justify-center">
                 {/* Logo from public/logo.webp */}
                 <Image
                   src="/logo.webp"
                   alt="Logotipo PastoSmart"
-                  width={320}
-                  height={320}
+                  width={384}
+                  height={384}
                   className="w-full h-full object-contain"
                   priority
                 />
               </div>
             </div>
             <div className="text-center">
-              <p className="text-gray-600 text-lg">Pecuária inteligente</p>
+              <p className="text-gray-600 text-2xl mt-2">Pecuária inteligente</p>
             </div>
           </div>
 
@@ -119,9 +176,9 @@ export default function PastoSmartAuth() {
                 {/* Campos comuns */}
                 <div>
                   <input
-                    type="email"
+                    type={isLogin ? "text" : "email"}
                     name="email"
-                    placeholder="E-mail ou usuário"
+                    placeholder={isLogin ? "E-mail ou usuário" : "E-mail"}
                     value={formData.email}
                     onChange={handleInputChange}
                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-green-600 focus:outline-none transition-colors"
@@ -160,9 +217,10 @@ export default function PastoSmartAuth() {
 
                 <button
                   type="submit"
-                  className="w-full bg-green-700 hover:bg-green-800 text-white font-bold py-3 rounded-lg transition-colors duration-200 shadow-lg"
+                  className="w-full bg-green-700 hover:bg-green-800 text-white font-bold py-3 rounded-lg transition-colors duration-200 shadow-lg disabled:opacity-50"
+                  disabled={loading}
                 >
-                  {isLogin ? "Acessar" : "Cadastrar"}
+                  {loading ? "Enviando..." : isLogin ? "Acessar" : "Cadastrar"}
                 </button>
               </form>
 
@@ -171,9 +229,7 @@ export default function PastoSmartAuth() {
                 {isLogin ? (
                   <>
                     <p className="text-gray-600 mb-2">Esqueceu sua senha?</p>
-                    <button className="text-blue-600 hover:text-blue-700 font-semibold">
-                      Clique aqui
-                    </button>
+                    <button className="text-blue-600 hover:text-blue-700 font-semibold">Clique aqui</button>
 
                     <div className="mt-6 pt-6 border-t border-gray-200">
                       <p className="text-gray-600 mb-2">Ainda não tem uma conta?</p>
