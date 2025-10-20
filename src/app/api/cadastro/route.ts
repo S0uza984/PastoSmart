@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
       const match = user.senha === password; // só para dev/teste
       if (!match) return NextResponse.json({ message: "Senha incorreta" }, { status: 401 });
 
-      return NextResponse.json({ message: "Login OK", userId: user.id }, { status: 200 });
+      return NextResponse.json({ message: "Login OK", userId: user.id, userRole: user.role }, { status: 200 });
     }
 
     // cadastro

@@ -93,9 +93,15 @@ export default function PastoSmartAuth() {
         return;
       }
 
-      // login: redirecionar para área administrativa
+      // login: redirecionar baseado no tipo de usuário
       alert("Login realizado.");
-      router.push("/adm");
+      if (body.userRole === 'admin') {
+        router.push("/adm");
+      } else if (body.userRole === 'peao') {
+        router.push("/peao");
+      } else {
+        router.push("/adm"); // fallback
+      }
     } catch (err) {
       console.error(err);
       alert("Falha ao comunicar com o servidor.");
