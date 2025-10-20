@@ -171,6 +171,7 @@ const LoteDetailsPage = () => {
                   <th className="px-6 py-3">Nome</th>
                   <th className="px-6 py-3">Peso (kg)</th>
                   <th className="px-6 py-3">Status</th>
+                  <th className="px-6 py-3">Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -186,6 +187,13 @@ const LoteDetailsPage = () => {
                       }>
                         {boi.status}
                       </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <Link href={`/adm/lote/${loteId}/boi/${boi.id}/pesagem`}>
+                        <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                          Ver Evolução
+                        </button>
+                      </Link>
                     </td>
                   </tr>
                 ))}
