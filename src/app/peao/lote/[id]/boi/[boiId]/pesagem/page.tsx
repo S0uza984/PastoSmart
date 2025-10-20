@@ -132,7 +132,7 @@ const PesagemPage = () => {
         </h1>
         <button 
           onClick={() => router.push(`/peao/lote/${loteId}`)}
-          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          className="mt-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
         >
           Voltar ao Lote
         </button>
@@ -168,7 +168,7 @@ const PesagemPage = () => {
         <div className="bg-white p-6 rounded-lg shadow border">
           <div className="text-center">
             <p className="text-sm font-medium text-gray-600">Peso Atual</p>
-            <p className="text-3xl font-bold text-blue-600">{boi.peso} kg</p>
+            <p className="text-3xl font-bold text-green-600">{boi.peso} kg</p>
           </div>
         </div>
 
@@ -236,7 +236,7 @@ const PesagemPage = () => {
               type="number"
               value={novoPeso}
               onChange={(e) => setNovoPeso(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
               placeholder="450.5"
               step="0.1"
             />
@@ -249,14 +249,14 @@ const PesagemPage = () => {
               type="date"
               value={novaData}
               onChange={(e) => setNovaData(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
             />
           </div>
           <div className="flex items-end">
             <button
               onClick={adicionarPesagem}
               disabled={salvando || !novoPeso}
-              className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+              className="w-full bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
             >
               <Plus size={20} />
               <span>{salvando ? 'Salvando...' : 'Adicionar Pesagem'}</span>

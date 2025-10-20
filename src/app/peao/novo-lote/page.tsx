@@ -76,7 +76,7 @@ export default function PeaoNovoLotePage() {
                                 type="text" 
                                 value={nomeLote}
                                 onChange={(e) => setNomeLote(e.target.value)}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500" 
                                 placeholder="Ex: Lote D - Nelore"
                             />
                         </div>
@@ -89,7 +89,7 @@ export default function PeaoNovoLotePage() {
                                 type="date" 
                                 value={dataChegada}
                                 onChange={(e) => setDataChegada(e.target.value)}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500" 
                             />
                         </div>
 
@@ -101,7 +101,7 @@ export default function PeaoNovoLotePage() {
                                 type="number" 
                                 value={custoLote}
                                 onChange={(e) => setCustoLote(e.target.value)}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500" 
                                 placeholder="50000"
                                 step="0.01"
                             />
@@ -114,7 +114,7 @@ export default function PeaoNovoLotePage() {
                             <select 
                                 value={String(vacinadoLote)}
                                 onChange={(e) => setVacinadoLote(e.target.value === 'true')}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                             >
                                 <option value="false">Não</option>
                                 <option value="true">Sim</option>
@@ -130,7 +130,7 @@ export default function PeaoNovoLotePage() {
                                     type="date" 
                                     value={dataVacinacao}
                                     onChange={(e) => setDataVacinacao(e.target.value)}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500" 
                                 />
                             </div>
                         )}
@@ -147,15 +147,15 @@ export default function PeaoNovoLotePage() {
                         <button 
                             onClick={salvarLote}
                             disabled={!nomeLote || !dataChegada || !custoLote || (vacinadoLote && !dataVacinacao)}
-                            className="flex-2 bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                            className="flex-2 bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                         >
                             <Save size={20} />
                             <span>Criar Lote</span>
                         </button>
                     </div>
 
-                    <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                        <p className="text-blue-800 text-sm">
+                    <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <p className="text-green-800 text-sm">
                             <strong>Próximo passo:</strong> Após criar o lote, você poderá adicionar bois a ele através do botão "Adicionar Bois" na página de lotes.
                         </p>
                     </div>

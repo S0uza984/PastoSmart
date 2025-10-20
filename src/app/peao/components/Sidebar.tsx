@@ -25,15 +25,10 @@ const Sidebar = () => {
       href: '/peao/lote',
       icon: Users,
     },
-    {
-      name: 'Estatísticas',
-      href: '/peao/estatisticas',
-      icon: BarChart3,
-    },
   ];
 
   return (
-    <div className="bg-gray-800 text-white w-64 min-h-screen p-4">
+    <div className="bg-green-800 text-white w-64 min-h-screen p-4">
       <div className="flex items-center mb-8">
         <div className="bg-green-600 p-2 rounded-lg mr-3">
           <User className="h-6 w-6" />
@@ -56,7 +51,7 @@ const Sidebar = () => {
               className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
                 isActive
                   ? 'bg-green-600 text-white'
-                  : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                  : 'text-gray-300 hover:bg-green-700 hover:text-white'
               }`}
             >
               <Icon className="h-5 w-5 mr-3" />
@@ -66,8 +61,8 @@ const Sidebar = () => {
         })}
       </nav>
 
-      <div className="mt-8 pt-4 border-t border-gray-700">
-        <button className="flex items-center w-full px-4 py-3 text-gray-300 hover:bg-gray-700 hover:text-white rounded-lg transition-colors">
+      <div className="mt-8 pt-4 border-t border-green-700">
+        <button className="flex items-center w-full px-4 py-3 text-gray-300 hover:bg-green-700 hover:text-white rounded-lg transition-colors">
           <LogOut className="h-5 w-5 mr-3" />
           Sair
         </button>

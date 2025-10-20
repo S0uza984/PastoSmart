@@ -69,7 +69,7 @@ const PeaoLoteDetailsPage = () => {
           {error || 'Lote não encontrado'}
         </h1>
         <Link href="/peao/lote">
-          <button className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+          <button className="mt-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
             Voltar para Lotes
           </button>
         </Link>
@@ -103,7 +103,7 @@ const PeaoLoteDetailsPage = () => {
         <div className="bg-white p-6 rounded-lg shadow border">
           <div className="text-center">
             <p className="text-sm font-medium text-gray-600">Peso Médio</p>
-            <p className="text-3xl font-bold text-blue-600">{lote.pesoMedio.toFixed(1)} kg</p>
+            <p className="text-3xl font-bold text-green-600">{lote.pesoMedio.toFixed(1)} kg</p>
           </div>
         </div>
 
@@ -190,7 +190,7 @@ const PeaoLoteDetailsPage = () => {
                     </td>
                     <td className="px-6 py-4">
                       <Link href={`/peao/lote/${loteId}/boi/${boi.id}/pesagem`}>
-                        <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                        <button className="text-green-600 hover:text-green-800 text-sm font-medium">
                           Ver Evolução
                         </button>
                       </Link>
@@ -206,7 +206,7 @@ const PeaoLoteDetailsPage = () => {
       {/* Botão para Adicionar Bois */}
       <div className="mt-6 flex justify-center">
         <Link href={`/peao/lote/${loteId}/adicionar-bois`}>
-          <button className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center">
+          <button className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center">
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
