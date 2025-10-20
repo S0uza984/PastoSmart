@@ -25,7 +25,7 @@ interface Boi {
 const PesagemPage = () => {
   const router = useRouter();
   const params = useParams();
-  const loteId = params.loteId as string;
+  const loteId = params.id as string;
   const boiId = params.boiId as string;
   
   const [boi, setBoi] = useState<Boi | null>(null);

@@ -48,11 +48,42 @@ export async function POST(
       }
     });
 
-    // Atualizar o peso atual do boi
-    await prisma.boi.update({
-      where: { id: boiId },
-      data: { peso: parseFloat(peso) }
+    // Buscar TODAS as pesagens do boi para encontrar a mais recente
+    const todasPesagens = await prisma.pesoHistorico.findMany({
+      where: { boiId: boiId }
     });
+
+    // Ordenar manualmente por data para garantir que funcione corretamente
+    const pesagensOrdenadas = todasPesagens.sort((a: any, b: any) => {
+      const dataA = new Date(a.dataPesagem).getTime();
+      const dataB = new Date(b.dataPesagem).getTime();
+      return dataB - dataA; // Ordem decrescente (mais recente primeiro)
+    });
+
+    console.log('=== DEBUG PESAGENS ===');
+    console.log('Todas as pesagens do boi:', pesagensOrdenadas.map((p: any) => ({
+      id: p.id,
+      peso: p.peso,
+      dataPesagem: p.dataPesagem,
+      timestamp: new Date(p.dataPesagem).getTime(),
+      dataFormatada: new Date(p.dataPesagem).toLocaleDateString('pt-BR')
+    })));
+
+    const pesagemMaisRecente = pesagensOrdenadas[0]; // Primeira da lista = mais recente
+    console.log('Pesagem mais recente selecionada:', pesagemMaisRecente);
+
+    // Atualizar o peso atual do boi com o peso da pesagem mais recente
+    if (pesagemMaisRecente) {
+      const resultado = await prisma.boi.update({
+        where: { id: boiId },
+        data: { peso: pesagemMaisRecente.peso }
+      });
+      console.log(`✅ Peso do boi ${boiId} atualizado para: ${pesagemMaisRecente.peso}kg`);
+      console.log('Resultado da atualização:', resultado);
+    } else {
+      console.log('❌ Nenhuma pesagem encontrada para atualizar');
+    }
+    console.log('======================');
 
     return NextResponse.json({ 
       message: "Pesagem registrada com sucesso",
@@ -115,7 +146,7 @@ export async function GET(
           codigo: boi.Lote.codigo
         }
       },
-      historico: historico.map(p => ({
+      historico: historico.map((p: any) => ({
         id: p.id,
         peso: p.peso,
         dataPesagem: p.dataPesagem
