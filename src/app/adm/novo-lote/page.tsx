@@ -28,24 +28,37 @@ export default function NovoLotePage() {
     const [vacinadoLote, setVacinadoLote] = useState(false);
     const [dataVacinacao, setDataVacinacao] = useState('');
 
-    const salvarLote = () => {
-        if (nomeLote && dataChegada && custoLote) {
-            const newLote: Omit<Lote, 'id'> = {
-                nome: nomeLote,
-                dataChegada,
-                custo: parseFloat(custoLote),
-                vacinado: vacinadoLote,
-                dataVacinacao: vacinadoLote && dataVacinacao ? dataVacinacao : null,
-                bois: [] // Lote criado sem bois inicialmente
-            };
-            
-            // Por enquanto só mostra alerta - depois pode integrar com banco de dados
-            console.log('Novo lote:', newLote);
-            
-            alert('Lote criado com sucesso! Agora você pode adicionar bois a ele.');
-            router.push('/adm/lote'); // Redirecionar para a lista de lotes
+    const salvarLote = async () => {
+        if (nomeLote && dataChegada && custoLote && (!vacinadoLote || dataVacinacao)) {
+            try {
+                const response = await fetch('/api/lotes', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        codigo: nomeLote,
+                        chegada: dataChegada,
+                        custo: parseFloat(custoLote),
+                        vacinado: vacinadoLote,
+                        data_vacinacao: vacinadoLote ? dataVacinacao : null
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Erro ao criar lote');
+                }
+
+                const result = await response.json();
+                alert('Lote criado com sucesso! Agora você pode adicionar bois a ele.');
+                router.push('/adm/lote');
+            } catch (error) {
+                console.error('Erro ao criar lote:', error);
+                alert('Erro ao criar lote: ' + (error instanceof Error ? error.message : 'Erro desconhecido'));
+            }
         } else {
-            alert('Preencha todos os campos obrigatórios.');
+            alert('Preencha todos os campos obrigatórios. Se o lote foi vacinado, informe a data da vacinação.');
         }
     };
 
@@ -149,7 +162,7 @@ export default function NovoLotePage() {
                         </button>
                         <button 
                             onClick={salvarLote}
-                            disabled={!nomeLote || !dataChegada || !custoLote}
+                            disabled={!nomeLote || !dataChegada || !custoLote || (vacinadoLote && !dataVacinacao)}
                             className="flex-2 bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                         >
                             <Save size={20} />

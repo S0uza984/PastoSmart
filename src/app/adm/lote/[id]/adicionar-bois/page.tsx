@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, Plus, Trash2, Save } from 'lucide-react';
 
@@ -17,9 +17,26 @@ export default function AdicionarBoisPage() {
     
     const [boisParaAdicionar, setBoisParaAdicionar] = useState<Omit<Boi, 'id'>[]>([]);
     const [pesoAtual, setPesoAtual] = useState('');
+    const [nomeLote, setNomeLote] = useState(`Lote ${loteId}`);
+    const [loading, setLoading] = useState(true);
 
-    // Buscar informações do lote (mockado por enquanto)
-    const nomeLote = `Lote ${loteId}`; // Depois buscar do banco
+    useEffect(() => {
+        fetchLoteInfo();
+    }, [loteId]);
+
+    const fetchLoteInfo = async () => {
+        try {
+            const response = await fetch(`/api/lotes/${loteId}`);
+            if (response.ok) {
+                const data = await response.json();
+                setNomeLote(data.codigo);
+            }
+        } catch (error) {
+            console.error('Erro ao buscar informações do lote:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const adicionarBoi = () => {
         if (pesoAtual && parseFloat(pesoAtual) > 0) {
@@ -36,18 +53,31 @@ export default function AdicionarBoisPage() {
         setBoisParaAdicionar(boisParaAdicionar.filter((_, i) => i !== index));
     };
 
-    const salvarBois = () => {
+    const salvarBois = async () => {
         if (boisParaAdicionar.length > 0) {
-            const boisComId = boisParaAdicionar.map((boi, index) => ({ 
-                ...boi, 
-                id: Date.now() + index 
-            }));
-            
-            // Por enquanto só mostra alerta - depois pode integrar com banco de dados
-            console.log(`Adicionando ${boisComId.length} bois ao lote ${loteId}:`, boisComId);
-            
-            alert(`${boisComId.length} bois adicionados com sucesso ao ${nomeLote}!`);
-            router.push('/adm/lote');
+            try {
+                const response = await fetch(`/api/lotes/${loteId}/bois`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        bois: boisParaAdicionar
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Erro ao adicionar bois');
+                }
+
+                const result = await response.json();
+                alert(`${boisParaAdicionar.length} bois adicionados com sucesso ao ${nomeLote}!`);
+                router.push('/adm/lote');
+            } catch (error) {
+                console.error('Erro ao adicionar bois:', error);
+                alert('Erro ao adicionar bois: ' + (error instanceof Error ? error.message : 'Erro desconhecido'));
+            }
         } else {
             alert('Adicione pelo menos um boi antes de salvar.');
         }
@@ -58,6 +88,16 @@ export default function AdicionarBoisPage() {
         : 0;
     
     const pesoTotal = boisParaAdicionar.reduce((acc, boi) => acc + boi.peso, 0);
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gray-100 p-6">
+                <div className="flex justify-center items-center h-64">
+                    <div className="text-lg text-gray-600">Carregando informações do lote...</div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gray-100 p-6">

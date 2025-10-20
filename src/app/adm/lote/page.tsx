@@ -1,36 +1,64 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 
+interface Lote {
+  id: number;
+  codigo: string;
+  chegada: string;
+  custo: number;
+  vacinado: boolean;
+  data_vacinacao: string | null;
+  quantidadeBois: number;
+  pesoMedio: number;
+  pesoTotal: number;
+}
+
 const LotePage = () => {
-  // Dados mockados dos lotes
-  const lotes = [
-    {
-      id: 1,
-      nome: 'Lote A',
-      dataVacinacao: '2024-01-15',
-      statusVacinacao: 'completa',
-      quantidadeBois: 3,
-      observacoes: 'Vacinação contra febre aftosa'
-    },
-    {
-      id: 2,
-      nome: 'Lote B',
-      dataVacinacao: '2024-01-20',
-      statusVacinacao: 'pendente',
-      quantidadeBois: 2,
-      observacoes: 'Aguardando segunda dose'
-    },
-    {
-      id: 3,
-      nome: 'Lote C',
-      dataVacinacao: '2024-02-01',
-      statusVacinacao: 'completa',
-      quantidadeBois: 4,
-      observacoes: 'Vacinação de rotina'
+  const [lotes, setLotes] = useState<Lote[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchLotes();
+  }, []);
+
+  const fetchLotes = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/lotes');
+      if (!response.ok) {
+        throw new Error('Erro ao carregar lotes');
+      }
+      const data = await response.json();
+      setLotes(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro desconhecido');
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  if (loading) {
+    return (
+      <div className="p-6">
+        <div className="flex justify-center items-center h-64">
+          <div className="text-lg text-gray-600">Carregando lotes...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="flex justify-center items-center h-64">
+          <div className="text-lg text-red-600">Erro: {error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
@@ -82,9 +110,9 @@ const LotePage = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
             <div className="ml-2">
-              <p className="text-sm font-medium text-gray-600">Vacinações Completas</p>
+              <p className="text-sm font-medium text-gray-600">Lotes Vacinados</p>
               <p className="text-2xl font-bold text-gray-900">
-                {lotes.filter(lote => lote.statusVacinacao === 'completa').length}
+                {lotes.filter(lote => lote.vacinado).length}
               </p>
             </div>
           </div>
@@ -98,7 +126,7 @@ const LotePage = () => {
             <div className="bg-green-600 text-white p-4 cursor-pointer hover:bg-green-700 transition-colors">
               <Link href={`/adm/lote/${lote.id}`}>
                 <div>
-                  <h3 className="text-xl font-bold">{lote.nome}</h3>
+                  <h3 className="text-xl font-bold">{lote.codigo}</h3>
                   <p className="text-green-100 text-sm">Clique para ver estatísticas</p>
                 </div>
               </Link>
@@ -114,28 +142,37 @@ const LotePage = () => {
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Peso Médio:</span>
                 <span className="font-bold text-lg text-blue-600">
-                  {lote.id === 1 ? '450.00' : lote.id === 2 ? '495.00' : '425.00'} kg
+                  {lote.pesoMedio.toFixed(1)} kg
                 </span>
               </div>
 
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Vacinados:</span>
-                <span className="font-bold text-lg text-purple-600">
-                  {lote.statusVacinacao === 'completa' ? lote.quantidadeBois : Math.floor(lote.quantidadeBois * 0.7)}/{lote.quantidadeBois}
+                <span className="text-gray-600">Vacinação:</span>
+                <span className={`font-bold text-lg ${lote.vacinado ? 'text-green-600' : 'text-red-600'}`}>
+                  {lote.vacinado ? 'Vacinado' : 'Não vacinado'}
                 </span>
               </div>
+
+              {lote.vacinado && lote.data_vacinacao && (
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Data da Vacinação:</span>
+                  <span className="font-bold text-gray-900">
+                    {new Date(lote.data_vacinacao).toLocaleDateString('pt-BR')}
+                  </span>
+                </div>
+              )}
 
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Data de Chegada:</span>
                 <span className="font-bold text-gray-900">
-                  {lote.id === 1 ? '30/09/2024' : lote.id === 2 ? '14/09/2024' : '22/08/2024'}
+                  {new Date(lote.chegada).toLocaleDateString('pt-BR')}
                 </span>
               </div>
 
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Custo Total:</span>
                 <span className="font-bold text-lg text-green-600">
-                  {lote.id === 1 ? 'R$ 50.000' : lote.id === 2 ? 'R$ 75.000' : 'R$ 62.000'}
+                  R$ {lote.custo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </span>
               </div>
 
@@ -159,3 +196,4 @@ const LotePage = () => {
 };
 
 export default LotePage;
+
