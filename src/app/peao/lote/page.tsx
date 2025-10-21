@@ -15,7 +15,7 @@ interface Lote {
   pesoTotal: number;
 }
 
-const LotePage = () => {
+const PeaoLotePage = () => {
   const [lotes, setLotes] = useState<Lote[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -67,8 +67,8 @@ const LotePage = () => {
           <h1 className="text-3xl font-bold text-gray-900">Gerenciar Lotes</h1>
           <p className="text-gray-600">Visualize e gerencie os lotes de gado</p>
         </div>
-        <Link href="/adm/novo-lote">
-          <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center">
+        <Link href="/peao/novo-lote">
+          <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center">
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
@@ -80,8 +80,8 @@ const LotePage = () => {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-6">
         <div className="bg-white p-6 rounded-lg shadow border">
           <div className="flex items-center">
-            <svg className="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 515.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            <svg className="h-4 w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 515.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 919.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
             <div className="ml-2">
               <p className="text-sm font-medium text-gray-600">Total de Lotes</p>
@@ -124,7 +124,7 @@ const LotePage = () => {
           <div key={lote.id} className="bg-white rounded-lg shadow border overflow-hidden">
             {/* Header do Card */}
             <div className="bg-green-600 text-white p-4 cursor-pointer hover:bg-green-700 transition-colors">
-              <Link href={`/adm/lote/${lote.id}`}>
+              <Link href={`/peao/lote/${lote.id}`}>
                 <div>
                   <h3 className="text-xl font-bold">{lote.codigo}</h3>
                   <p className="text-green-100 text-sm">Clique para ver estatísticas</p>
@@ -141,7 +141,7 @@ const LotePage = () => {
 
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Peso Médio:</span>
-                <span className="font-bold text-lg text-blue-600">
+                <span className="font-bold text-lg text-green-600">
                   {lote.pesoMedio.toFixed(1)} kg
                 </span>
               </div>
@@ -176,10 +176,10 @@ const LotePage = () => {
                 </span>
               </div>
 
-              {/* Botão de Adicionar Bois */}
-              <div className="pt-2 border-t">
-                <Link href={`/adm/lote/${lote.id}/adicionar-bois`}>
-                  <button className="w-full px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors flex items-center justify-center">
+              {/* Botões de Ação */}
+              <div className="pt-2 border-t space-y-2">
+                <Link href={`/peao/lote/${lote.id}/adicionar-bois`}>
+                  <button className="w-full px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors flex items-center justify-center">
                     <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
@@ -195,5 +195,4 @@ const LotePage = () => {
   );
 };
 
-export default LotePage;
-
+export default PeaoLotePage;

@@ -31,6 +31,8 @@ model Lote {
   chegada      DateTime
   custo        Float
   data_venda   DateTime?
+  vacinado     Boolean   @default(false)
+  data_vacinacao DateTime?
   
   // Relações
   bois         Boi[]
@@ -42,7 +44,6 @@ model Lote {
 model Boi {
   id         Int       @id @default(autoincrement())
   peso       Float
-  vacina     String?
   status     String
   alerta     String?
   

@@ -10,7 +10,7 @@ interface Boi {
     peso: number;
 }
 
-export default function AdicionarBoisPage() {
+export default function PeaoAdicionarBoisPage() {
     const router = useRouter();
     const params = useParams();
     const loteId = params.id as string;
@@ -73,7 +73,7 @@ export default function AdicionarBoisPage() {
 
                 const result = await response.json();
                 alert(`${boisParaAdicionar.length} bois adicionados com sucesso ao ${nomeLote}!`);
-                router.push('/adm/lote');
+                router.push('/peao/lote');
             } catch (error) {
                 console.error('Erro ao adicionar bois:', error);
                 alert('Erro ao adicionar bois: ' + (error instanceof Error ? error.message : 'Erro desconhecido'));
@@ -106,7 +106,7 @@ export default function AdicionarBoisPage() {
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                         <button
-                            onClick={() => router.push('/adm/lote')}
+                            onClick={() => router.push('/peao/lote')}
                             className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
                         >
                             <ArrowLeft size={20} />
@@ -118,23 +118,23 @@ export default function AdicionarBoisPage() {
 
                 {/* Resumo */}
                 {boisParaAdicionar.length > 0 && (
-                    <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-                        <h3 className="text-lg font-semibold text-blue-800 mb-2">Resumo dos Bois</h3>
+                    <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
+                        <h3 className="text-lg font-semibold text-green-800 mb-2">Resumo dos Bois</h3>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                             <div>
-                                <span className="text-blue-600 font-medium">Quantidade:</span>
+                                <span className="text-green-600 font-medium">Quantidade:</span>
                                 <p className="text-gray-800 font-bold">{boisParaAdicionar.length} bois</p>
                             </div>
                             <div>
-                                <span className="text-blue-600 font-medium">Peso Total:</span>
+                                <span className="text-green-600 font-medium">Peso Total:</span>
                                 <p className="text-gray-800 font-bold">{pesoTotal.toFixed(1)} kg</p>
                             </div>
                             <div>
-                                <span className="text-blue-600 font-medium">Peso Médio:</span>
+                                <span className="text-green-600 font-medium">Peso Médio:</span>
                                 <p className="text-gray-800 font-bold">{pesoMedio.toFixed(1)} kg</p>
                             </div>
                             <div>
-                                <span className="text-blue-600 font-medium">Range de Peso:</span>
+                                <span className="text-green-600 font-medium">Range de Peso:</span>
                                 <p className="text-gray-800 font-bold">
                                     {Math.min(...boisParaAdicionar.map(b => b.peso)).toFixed(1)} - {Math.max(...boisParaAdicionar.map(b => b.peso)).toFixed(1)} kg
                                 </p>
@@ -156,7 +156,7 @@ export default function AdicionarBoisPage() {
                                 type="number" 
                                 value={pesoAtual}
                                 onChange={(e) => setPesoAtual(e.target.value)}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500" 
                                 placeholder="450"
                                 step="0.1"
                                 onKeyPress={(e) => {
@@ -168,7 +168,7 @@ export default function AdicionarBoisPage() {
                         </div>
                         <button 
                             onClick={adicionarBoi}
-                            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center space-x-2"
+                            className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center space-x-2"
                         >
                             <Plus size={20} />
                             <span>Adicionar Boi</span>
@@ -194,7 +194,7 @@ export default function AdicionarBoisPage() {
                                 <div key={idx} className="flex justify-between items-center py-3 px-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors">
                                     <div className="flex items-center space-x-4">
                                         <span className="font-medium text-gray-800">Boi #{idx + 1}</span>
-                                        <span className="text-blue-600 font-semibold">{boi.peso} kg</span>
+                                        <span className="text-green-600 font-semibold">{boi.peso} kg</span>
                                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                                             boi.peso >= pesoMedio ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
                                         }`}>
@@ -217,7 +217,7 @@ export default function AdicionarBoisPage() {
                 {/* Botões de Ação */}
                 <div className="flex gap-4">
                     <button 
-                        onClick={() => router.push('/adm/lote')}
+                        onClick={() => router.push('/peao/lote')}
                         className="flex-1 bg-gray-500 text-white px-6 py-3 rounded-lg hover:bg-gray-600 transition-colors font-medium"
                     >
                         Cancelar

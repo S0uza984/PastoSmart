@@ -4,23 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save } from 'lucide-react';
 
-// Tipagem dos Dados
-interface Boi {
-    id: number;
-    peso: number;
-}
-
-interface Lote {
-    id: number;
-    nome: string;
-    dataChegada: string;
-    custo: number;
-    vacinado: boolean;
-    dataVacinacao: string | null;
-    bois: Boi[];
-}
-
-export default function NovoLotePage() {
+export default function PeaoNovoLotePage() {
     const router = useRouter();
     const [nomeLote, setNomeLote] = useState('');
     const [dataChegada, setDataChegada] = useState('');
@@ -52,7 +36,7 @@ export default function NovoLotePage() {
 
                 const result = await response.json();
                 alert('Lote criado com sucesso! Agora você pode adicionar bois a ele.');
-                router.push('/adm/lote');
+                router.push('/peao/lote');
             } catch (error) {
                 console.error('Erro ao criar lote:', error);
                 alert('Erro ao criar lote: ' + (error instanceof Error ? error.message : 'Erro desconhecido'));
@@ -69,7 +53,7 @@ export default function NovoLotePage() {
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                         <button
-                            onClick={() => router.push('/adm/lote')}
+                            onClick={() => router.push('/peao/lote')}
                             className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
                         >
                             <ArrowLeft size={20} />
@@ -92,7 +76,7 @@ export default function NovoLotePage() {
                                 type="text" 
                                 value={nomeLote}
                                 onChange={(e) => setNomeLote(e.target.value)}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500" 
                                 placeholder="Ex: Lote D - Nelore"
                             />
                         </div>
@@ -105,7 +89,7 @@ export default function NovoLotePage() {
                                 type="date" 
                                 value={dataChegada}
                                 onChange={(e) => setDataChegada(e.target.value)}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500" 
                             />
                         </div>
 
@@ -117,7 +101,7 @@ export default function NovoLotePage() {
                                 type="number" 
                                 value={custoLote}
                                 onChange={(e) => setCustoLote(e.target.value)}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500" 
                                 placeholder="50000"
                                 step="0.01"
                             />
@@ -130,7 +114,7 @@ export default function NovoLotePage() {
                             <select 
                                 value={String(vacinadoLote)}
                                 onChange={(e) => setVacinadoLote(e.target.value === 'true')}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                             >
                                 <option value="false">Não</option>
                                 <option value="true">Sim</option>
@@ -146,7 +130,7 @@ export default function NovoLotePage() {
                                     type="date" 
                                     value={dataVacinacao}
                                     onChange={(e) => setDataVacinacao(e.target.value)}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500" 
                                 />
                             </div>
                         )}
@@ -155,7 +139,7 @@ export default function NovoLotePage() {
                     {/* Botões */}
                     <div className="flex gap-4 mt-8">
                         <button 
-                            onClick={() => router.push('/adm/lotes')}
+                            onClick={() => router.push('/peao/lote')}
                             className="flex-1 bg-gray-500 text-white px-6 py-3 rounded-lg hover:bg-gray-600 transition-colors font-medium"
                         >
                             Cancelar
@@ -163,15 +147,15 @@ export default function NovoLotePage() {
                         <button 
                             onClick={salvarLote}
                             disabled={!nomeLote || !dataChegada || !custoLote || (vacinadoLote && !dataVacinacao)}
-                            className="flex-2 bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                            className="flex-2 bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                         >
                             <Save size={20} />
                             <span>Criar Lote</span>
                         </button>
                     </div>
 
-                    <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                        <p className="text-blue-800 text-sm">
+                    <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <p className="text-green-800 text-sm">
                             <strong>Próximo passo:</strong> Após criar o lote, você poderá adicionar bois a ele através do botão "Adicionar Bois" na página de lotes.
                         </p>
                     </div>
