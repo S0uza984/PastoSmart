@@ -31,6 +31,16 @@ const LoteDetailsPage = () => {
   const [lote, setLote] = useState<Lote | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isEditingLote, setIsEditingLote] = useState(false);
+  const [editLoteForm, setEditLoteForm] = useState({
+    codigo: '',
+    chegada: '',
+    custo: '',
+    vacinado: false,
+    data_vacinacao: ''
+  });
+  const [editingBoiId, setEditingBoiId] = useState<number | null>(null);
+  const [editBoiForm, setEditBoiForm] = useState({ peso: '', status: '', alerta: '' });
 
   useEffect(() => {
     fetchLote();
@@ -45,6 +55,13 @@ const LoteDetailsPage = () => {
       }
       const data = await response.json();
       setLote(data);
+      setEditLoteForm({
+        codigo: data.codigo || '',
+        chegada: data.chegada ? new Date(data.chegada).toISOString().slice(0, 10) : '',
+        custo: String(data.custo ?? ''),
+        vacinado: Boolean(data.vacinado),
+        data_vacinacao: data.data_vacinacao ? new Date(data.data_vacinacao).toISOString().slice(0, 10) : ''
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro desconhecido');
     } finally {
@@ -84,11 +101,14 @@ const LoteDetailsPage = () => {
           <h1 className="text-3xl font-bold text-gray-900">Estatísticas - {lote.codigo}</h1>
           <p className="text-gray-600">Detalhes e estatísticas do lote</p>
         </div>
-        <Link href="/adm/lote">
-          <button className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
-            Voltar para Lotes
-          </button>
-        </Link>
+        <div className="flex items-center gap-3">
+          <button onClick={() => setIsEditingLote(true)} className="px-4 py-2 bg-amber-500 text-white rounded hover:bg-amber-600">Editar Lote</button>
+          <Link href="/adm/lote">
+            <button className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+              Voltar para Lotes
+            </button>
+          </Link>
+        </div>
       </div>
 
       {/* Cards de Estatísticas */}
@@ -189,11 +209,22 @@ const LoteDetailsPage = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <Link href={`/adm/lote/${loteId}/boi/${boi.id}/pesagem`}>
-                        <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                          Ver Evolução
+                      <div className="flex items-center gap-3">
+                        <Link href={`/adm/lote/${loteId}/boi/${boi.id}/pesagem`}>
+                          <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                            Ver Evolução
+                          </button>
+                        </Link>
+                        <button
+                          onClick={() => {
+                            setEditingBoiId(boi.id);
+                            setEditBoiForm({ peso: String(boi.peso), status: boi.status, alerta: boi.alerta || '' });
+                          }}
+                          className="text-amber-600 hover:text-amber-800 text-sm font-medium"
+                        >
+                          Editar
                         </button>
-                      </Link>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -214,6 +245,90 @@ const LoteDetailsPage = () => {
           </button>
         </Link>
       </div>
+      {isEditingLote && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow w-full max-w-lg">
+            <div className="p-4 border-b font-semibold">Editar Lote</div>
+            <div className="p-4 grid grid-cols-1 gap-4">
+              <label className="text-sm">Código
+                <input value={editLoteForm.codigo} onChange={(e) => setEditLoteForm(v => ({ ...v, codigo: e.target.value }))} className="mt-1 w-full border rounded px-3 py-2" />
+              </label>
+              <label className="text-sm">Chegada
+                <input type="date" value={editLoteForm.chegada} onChange={(e) => setEditLoteForm(v => ({ ...v, chegada: e.target.value }))} className="mt-1 w-full border rounded px-3 py-2" />
+              </label>
+              <label className="text-sm">Custo
+                <input type="number" step="0.01" value={editLoteForm.custo} onChange={(e) => setEditLoteForm(v => ({ ...v, custo: e.target.value }))} className="mt-1 w-full border rounded px-3 py-2" />
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={editLoteForm.vacinado} onChange={(e) => setEditLoteForm(v => ({ ...v, vacinado: e.target.checked }))} />
+                Vacinado
+              </label>
+              {editLoteForm.vacinado && (
+                <label className="text-sm">Data de Vacinação
+                  <input type="date" value={editLoteForm.data_vacinacao} onChange={(e) => setEditLoteForm(v => ({ ...v, data_vacinacao: e.target.value }))} className="mt-1 w-full border rounded px-3 py-2" />
+                </label>
+              )}
+            </div>
+            <div className="p-4 border-t flex justify-end gap-3">
+              <button onClick={() => setIsEditingLote(false)} className="px-4 py-2 border rounded">Cancelar</button>
+              <button
+                onClick={async () => {
+                  const res = await fetch(`/api/lotes/${loteId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(editLoteForm)
+                  });
+                  if (res.ok) {
+                    setIsEditingLote(false);
+                    await fetchLote();
+                  } else {
+                    alert('Falha ao atualizar lote');
+                  }
+                }}
+                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+              >Salvar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editingBoiId && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow w-full max-w-lg">
+            <div className="p-4 border-b font-semibold">Editar Boi #{editingBoiId}</div>
+            <div className="p-4 grid grid-cols-1 gap-4">
+              <label className="text-sm">Peso (kg)
+                <input type="number" step="0.01" value={editBoiForm.peso} onChange={(e) => setEditBoiForm(v => ({ ...v, peso: e.target.value }))} className="mt-1 w-full border rounded px-3 py-2" />
+              </label>
+              <label className="text-sm">Status
+                <input value={editBoiForm.status} onChange={(e) => setEditBoiForm(v => ({ ...v, status: e.target.value }))} className="mt-1 w-full border rounded px-3 py-2" />
+              </label>
+              <label className="text-sm">Alerta
+                <input value={editBoiForm.alerta} onChange={(e) => setEditBoiForm(v => ({ ...v, alerta: e.target.value }))} className="mt-1 w-full border rounded px-3 py-2" />
+              </label>
+            </div>
+            <div className="p-4 border-t flex justify-end gap-3">
+              <button onClick={() => setEditingBoiId(null)} className="px-4 py-2 border rounded">Cancelar</button>
+              <button
+                onClick={async () => {
+                  const res = await fetch(`/api/bois/${editingBoiId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(editBoiForm)
+                  });
+                  if (res.ok) {
+                    setEditingBoiId(null);
+                    await fetchLote();
+                  } else {
+                    alert('Falha ao atualizar boi');
+                  }
+                }}
+                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+              >Salvar</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

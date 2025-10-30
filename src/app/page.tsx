@@ -130,7 +130,7 @@ export default function PastoSmartAuth() {
               </div>
             </div>
             <div className="text-center">
-              <p className="text-gray-600 text-2xl mt-2">Pecuária inteligente</p>
+              <p className="text-black text-2xl mt-2">Pecuária inteligente</p>
             </div>
           </div>
 
@@ -143,7 +143,7 @@ export default function PastoSmartAuth() {
             </div>
 
             <div className="mb-8">
-              <h3 className="text-lg text-gray-600 text-center mb-6">
+              <h3 className="text-lg text-black text-center mb-6">
                 {isLogin ? "Efetue seu login" : "Preencha os dados para se cadastrar"}
               </h3>
 
@@ -234,11 +234,11 @@ export default function PastoSmartAuth() {
               <div className="mt-6 text-center">
                 {isLogin ? (
                   <>
-                    <p className="text-gray-600 mb-2">Esqueceu sua senha?</p>
+                    <p className="text-black mb-2">Esqueceu sua senha?</p>
                     <button className="text-blue-600 hover:text-blue-700 font-semibold">Clique aqui</button>
 
                     <div className="mt-6 pt-6 border-t border-gray-200">
-                      <p className="text-gray-600 mb-2">Ainda não tem uma conta?</p>
+                      <p className="text-black mb-2">Ainda não tem uma conta?</p>
                       <button
                         onClick={() => {
                           setIsLogin(false);
@@ -252,7 +252,7 @@ export default function PastoSmartAuth() {
                   </>
                 ) : (
                   <div className="mt-6 pt-6 border-t border-gray-200">
-                    <p className="text-gray-600 mb-2">Já tem uma conta?</p>
+                    <p className="text-black mb-2">Já tem uma conta?</p>
                     <button
                       onClick={() => {
                         setIsLogin(true);

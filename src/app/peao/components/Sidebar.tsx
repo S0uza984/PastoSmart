@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { 
   Home, 
   Users, 
@@ -13,6 +13,7 @@ import {
 
 const Sidebar = () => {
   const pathname = usePathname();
+  const router = useRouter();
 
   const menuItems = [
     {
@@ -62,7 +63,7 @@ const Sidebar = () => {
       </nav>
 
       <div className="mt-8 pt-4 border-t border-green-700">
-        <button className="flex items-center w-full px-4 py-3 text-gray-300 hover:bg-green-700 hover:text-white rounded-lg transition-colors">
+        <button onClick={() => router.push('/')} className="flex items-center w-full px-4 py-3 text-gray-300 hover:bg-green-700 hover:text-white rounded-lg transition-colors">
           <LogOut className="h-5 w-5 mr-3" />
           Sair
         </button>
