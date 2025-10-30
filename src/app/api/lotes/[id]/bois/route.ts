@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // importa o Prisma Client dinamicamente
@@ -15,7 +15,8 @@ export async function POST(
     g.prisma = g.prisma || new PrismaClient();
     const prisma = g.prisma;
 
-    const loteId = parseInt(params.id);
+    const _params = await params;
+    const loteId = parseInt(_params.id);
 
     if (isNaN(loteId)) {
       return NextResponse.json({ message: "ID do lote inválido" }, { status: 400 });

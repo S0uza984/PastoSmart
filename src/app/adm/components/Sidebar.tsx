@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Home, ShoppingCart, BarChart3, LogOut } from 'lucide-react';
@@ -29,8 +31,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       ];
 
   const handleLogout = () => {
-    // Aqui você pode adicionar lógica de logout (limpar tokens, etc.)
-    router.push('/'); // Redireciona para tela de login
+    // Aqui Siscaro pode adicionar lógica de logout (limpar tokens, etc.)
+    router.push('/');
   };
 
   return (

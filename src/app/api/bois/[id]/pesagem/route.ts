@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // importa o Prisma Client dinamicamente
@@ -15,7 +15,8 @@ export async function POST(
     g.prisma = g.prisma || new PrismaClient();
     const prisma = g.prisma;
 
-    const boiId = parseInt(params.id);
+    const _params = await params;
+    const boiId = parseInt(_params.id);
 
     if (isNaN(boiId)) {
       return NextResponse.json({ message: "ID do boi inválido" }, { status: 400 });
@@ -92,7 +93,7 @@ export async function POST(
         peso: pesagem.peso,
         dataPesagem: pesagem.dataPesagem
       }
-    }, { status: 201 });
+    }, { status: 201, headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } });
   } catch (err: any) {
     console.error("API /api/bois/[id]/pesagem POST error:", err);
     return NextResponse.json({ message: err?.message || "Erro no servidor" }, { status: 500 });
@@ -101,7 +102,7 @@ export async function POST(
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // importa o Prisma Client dinamicamente
@@ -113,7 +114,8 @@ export async function GET(
     g.prisma = g.prisma || new PrismaClient();
     const prisma = g.prisma;
 
-    const boiId = parseInt(params.id);
+    const _params = await params;
+    const boiId = parseInt(_params.id);
 
     if (isNaN(boiId)) {
       return NextResponse.json({ message: "ID do boi inválido" }, { status: 400 });
@@ -151,7 +153,7 @@ export async function GET(
         peso: p.peso,
         dataPesagem: p.dataPesagem
       }))
-    }, { status: 200 });
+    }, { status: 200, headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } });
   } catch (err: any) {
     console.error("API /api/bois/[id]/pesagem GET error:", err);
     return NextResponse.json({ message: err?.message || "Erro no servidor" }, { status: 500 });

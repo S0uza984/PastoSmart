@@ -45,7 +45,7 @@ const PesagemPage = () => {
   const fetchDados = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/bois/${boiId}/pesagem`);
+      const response = await fetch(`/api/bois/${boiId}/pesagem`, { cache: 'no-store' });
       if (!response.ok) {
         throw new Error('Erro ao carregar dados do boi');
       }
