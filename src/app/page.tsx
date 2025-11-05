@@ -64,10 +64,11 @@ export default function PastoSmartAuth() {
       };
 
       const res = await fetch("/api/cadastro", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(payload),
+    });
 
       const body = await res.json().catch(() => ({ message: res.statusText || "Erro" }));
 
