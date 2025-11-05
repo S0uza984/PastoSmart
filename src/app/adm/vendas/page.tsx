@@ -1,6 +1,7 @@
 'use client';
 
-import React from 'react';
+import React, { useCallback } from 'react';
+import { TableFilter, FilterColumn } from '@/app/components/TableFilter';
 
 // Tipagem dos Dados
 interface Venda {
@@ -48,6 +49,17 @@ export default function VendasPage() {
     { id: 1, loteId: 1, loteName: "Lote A", data: "2024-02-01", valor: 75000 },
     { id: 2, loteId: 2, loteName: "Lote B", data: "2024-03-15", valor: 125000 }
   ]);
+  const [filteredVendas, setFilteredVendas] = React.useState<Venda[]>([]);
+
+  React.useEffect(() => {
+    setFilteredVendas(vendas);
+  }, [vendas]);
+
+  const filterColumns: FilterColumn[] = [
+    { key: 'loteName', label: 'Lote', type: 'text' },
+    { key: 'data', label: 'Data da Venda', type: 'date' },
+    { key: 'valor', label: 'Valor (R$)', type: 'number' }
+  ];
   // Estados locais para o formulário de nova venda (idealmente gerenciado aqui)
   const [dataVenda, setDataVenda] = React.useState('');
   const [loteVendidoId, setLoteVendidoId] = React.useState('');
@@ -101,6 +113,13 @@ export default function VendasPage() {
         </div>
       </div>
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="p-4 border-b border-gray-200 flex justify-end">
+          <TableFilter
+            data={vendas}
+            columns={filterColumns}
+            onFilterChange={setFilteredVendas}
+          />
+        </div>
         <table className="w-full">
           <thead className="bg-green-600 text-white">
             <tr>
@@ -110,7 +129,7 @@ export default function VendasPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {vendas.map((venda) => (
+            {filteredVendas.map((venda) => (
               <tr key={venda.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4">{new Date(venda.data).toLocaleDateString('pt-BR')}</td>
                 <td className="px-6 py-4">{venda.loteName}</td>

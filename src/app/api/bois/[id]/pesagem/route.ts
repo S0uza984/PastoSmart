@@ -15,8 +15,8 @@ export async function POST(
     g.prisma = g.prisma || new PrismaClient();
     const prisma = g.prisma;
 
-    const _params = await params;
-    const boiId = parseInt(_params.id);
+    const { id } = await params;
+    const boiId = parseInt(id);
 
     if (isNaN(boiId)) {
       return NextResponse.json({ message: "ID do boi inválido" }, { status: 400 });
@@ -114,8 +114,8 @@ export async function GET(
     g.prisma = g.prisma || new PrismaClient();
     const prisma = g.prisma;
 
-    const _params = await params;
-    const boiId = parseInt(_params.id);
+    const { id } = await params;
+    const boiId = parseInt(id);
 
     if (isNaN(boiId)) {
       return NextResponse.json({ message: "ID do boi inválido" }, { status: 400 });

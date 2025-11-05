@@ -15,8 +15,8 @@ export async function POST(
     g.prisma = g.prisma || new PrismaClient();
     const prisma = g.prisma;
 
-    const _params = await params;
-    const loteId = parseInt(_params.id);
+    const { id } = await params;
+    const loteId = parseInt(id);
 
     if (isNaN(loteId)) {
       return NextResponse.json({ message: "ID do lote inválido" }, { status: 400 });
