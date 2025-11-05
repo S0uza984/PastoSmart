@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { TableFilter, FilterColumn } from '@/app/components/TableFilter';
 
 interface Boi {
   id: number;
@@ -31,6 +32,7 @@ const PeaoLoteDetailsPage = () => {
   const [lote, setLote] = useState<Lote | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [filteredBois, setFilteredBois] = useState<Boi[]>([]);
 
   useEffect(() => {
     fetchLote();
@@ -45,12 +47,23 @@ const PeaoLoteDetailsPage = () => {
       }
       const data = await response.json();
       setLote(data);
+      setFilteredBois(data.bois || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro desconhecido');
     } finally {
       setLoading(false);
     }
   };
+
+  const filterColumns: FilterColumn[] = [
+    { key: 'id', label: 'ID', type: 'number' },
+    { key: 'peso', label: 'Peso (kg)', type: 'number' },
+    { key: 'status', label: 'Status', type: 'select', options: [
+      { value: 'ativo', label: 'Ativo' },
+      { value: 'inativo', label: 'Inativo' },
+      { value: 'vendido', label: 'Vendido' }
+    ]}
+  ];
 
   if (loading) {
     return (
@@ -159,8 +172,13 @@ const PeaoLoteDetailsPage = () => {
 
       {/* Tabela de Bois */}
       <div className="bg-white rounded-lg shadow border">
-        <div className="p-6 border-b border-gray-200">
+        <div className="p-6 border-b border-gray-200 flex justify-between items-center">
           <h3 className="text-lg font-semibold text-gray-900">Lista Detalhada dos Bois</h3>
+          <TableFilter
+            data={lote.bois}
+            columns={filterColumns}
+            onFilterChange={setFilteredBois}
+          />
         </div>
         <div className="p-6">
           <div className="overflow-x-auto">
@@ -175,10 +193,12 @@ const PeaoLoteDetailsPage = () => {
                 </tr>
               </thead>
               <tbody>
-                {lote.bois.map((boi, index) => (
+                {filteredBois.map((boi, index) => {
+                  const originalIndex = lote.bois.findIndex(b => b.id === boi.id);
+                  return (
                   <tr key={boi.id} className="bg-white border-b hover:bg-gray-50">
                     <td className="px-6 py-4 font-medium text-gray-900">{boi.id}</td>
-                    <td className="px-6 py-4">Boi {index + 1}</td>
+                    <td className="px-6 py-4">Boi {originalIndex >= 0 ? originalIndex + 1 : index + 1}</td>
                     <td className="px-6 py-4 font-semibold">{boi.peso} kg</td>
                     <td className="px-6 py-4">
                       <span className={boi.status === 'Ativo' ? 
@@ -196,7 +216,8 @@ const PeaoLoteDetailsPage = () => {
                       </Link>
                     </td>
                   </tr>
-                ))}
+                );
+                })}
               </tbody>
             </table>
           </div>

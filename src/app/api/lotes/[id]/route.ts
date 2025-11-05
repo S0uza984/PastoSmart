@@ -15,8 +15,8 @@ export async function GET(
     g.prisma = g.prisma || new PrismaClient();
     const prisma = g.prisma;
 
-    const _params = await params;
-    const loteId = parseInt(_params.id);
+    const { id } = await params;
+    const loteId = parseInt(id);
 
     if (isNaN(loteId)) {
       return NextResponse.json({ message: "ID do lote inválido" }, { status: 400 });
@@ -43,7 +43,7 @@ export async function GET(
     }
 
     // Calcular estatísticas do lote
-    const pesoTotal = lote.bois.reduce((acc, boi) => acc + boi.peso, 0);
+    const pesoTotal = lote.bois.reduce((acc: number, boi: { peso: number }) => acc + boi.peso, 0);
     const pesoMedio = lote.bois.length > 0 ? pesoTotal / lote.bois.length : 0;
     
     const loteComEstatisticas = {
@@ -57,7 +57,7 @@ export async function GET(
       quantidadeBois: lote._count.bois,
       pesoMedio: pesoMedio,
       pesoTotal: pesoTotal,
-      bois: lote.bois.map(boi => ({
+      bois: lote.bois.map((boi: { id: number; peso: number; status: string; alerta: string | null }) => ({
         id: boi.id,
         peso: boi.peso,
         status: boi.status,

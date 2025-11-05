@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, Plus, TrendingUp } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { TableFilter, FilterColumn } from '@/app/components/TableFilter';
 
 interface Pesagem {
   id: number;
@@ -30,6 +31,7 @@ const PesagemPage = () => {
   
   const [boi, setBoi] = useState<Boi | null>(null);
   const [historico, setHistorico] = useState<Pesagem[]>([]);
+  const [filteredHistorico, setFilteredHistorico] = useState<Pesagem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -52,12 +54,18 @@ const PesagemPage = () => {
       const data = await response.json();
       setBoi(data.boi);
       setHistorico(data.historico);
+      setFilteredHistorico(data.historico);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro desconhecido');
     } finally {
       setLoading(false);
     }
   };
+
+  const filterColumns: FilterColumn[] = [
+    { key: 'dataPesagem', label: 'Data da Pesagem', type: 'date' },
+    { key: 'peso', label: 'Peso (kg)', type: 'number' }
+  ];
 
   const adicionarPesagem = async () => {
     if (!novoPeso || parseFloat(novoPeso) <= 0) {
@@ -267,11 +275,16 @@ const PesagemPage = () => {
 
       {/* Tabela de Histórico */}
       <div className="bg-white rounded-lg shadow border">
-        <div className="p-6 border-b border-gray-200">
+        <div className="p-6 border-b border-gray-200 flex justify-between items-center">
           <h3 className="text-lg font-semibold text-gray-900">Histórico de Pesagens</h3>
+          <TableFilter
+            data={historico}
+            columns={filterColumns}
+            onFilterChange={setFilteredHistorico}
+          />
         </div>
         <div className="p-6">
-          {historico.length > 0 ? (
+          {filteredHistorico.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
                 <thead className="text-xs text-gray-700 uppercase bg-gray-50">
@@ -283,17 +296,20 @@ const PesagemPage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {historico.map((pesagem, index) => {
-                    const evolucaoAnterior = index > 0 ? pesagem.peso - historico[index - 1].peso : 0;
+                  {filteredHistorico.map((pesagem, index) => {
+                    const originalIndex = historico.findIndex(p => p.id === pesagem.id);
+                    const prevIndex = originalIndex > 0 ? originalIndex - 1 : -1;
+                    const pesagemAnterior = prevIndex >= 0 ? historico[prevIndex] : null;
+                    const evolucaoAnterior = pesagemAnterior ? pesagem.peso - pesagemAnterior.peso : 0;
                     return (
                       <tr key={pesagem.id} className="bg-white border-b hover:bg-gray-50">
-                        <td className="px-6 py-4 font-medium text-gray-900">{index + 1}</td>
+                        <td className="px-6 py-4 font-medium text-gray-900">{originalIndex >= 0 ? originalIndex + 1 : index + 1}</td>
                         <td className="px-6 py-4">
                           {new Date(pesagem.dataPesagem).toLocaleDateString('pt-BR')}
                         </td>
                         <td className="px-6 py-4 font-semibold">{pesagem.peso} kg</td>
                         <td className="px-6 py-4">
-                          {index > 0 && (
+                          {pesagemAnterior && (
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                               evolucaoAnterior >= 0 
                                 ? 'bg-green-100 text-green-800' 
@@ -309,11 +325,15 @@ const PesagemPage = () => {
                 </tbody>
               </table>
             </div>
-          ) : (
+          ) : historico.length === 0 ? (
             <div className="text-center py-8">
               <TrendingUp className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-500">Nenhuma pesagem registrada ainda.</p>
               <p className="text-sm text-gray-400">Adicione a primeira pesagem usando o formulário acima.</p>
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-gray-500">Nenhum resultado encontrado com os filtros aplicados.</p>
             </div>
           )}
         </div>
