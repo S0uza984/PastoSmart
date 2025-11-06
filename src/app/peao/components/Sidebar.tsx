@@ -10,6 +10,7 @@ import {
   LogOut,
   User
 } from 'lucide-react';
+import { logout } from '../../../lib/auth';
 
 const Sidebar = () => {
   const pathname = usePathname();
@@ -27,6 +28,10 @@ const Sidebar = () => {
       icon: Users,
     },
   ];
+
+  const handleLogout = async () => {
+    await logout();
+  };
 
   return (
     <div className="bg-green-800 text-white w-64 min-h-screen p-4">
@@ -63,7 +68,7 @@ const Sidebar = () => {
       </nav>
 
       <div className="mt-8 pt-4 border-t border-green-700">
-        <button onClick={() => router.push('/')} className="flex items-center w-full px-4 py-3 text-gray-300 hover:bg-green-700 hover:text-white rounded-lg transition-colors">
+        <button onClick={handleLogout} className="flex items-center w-full px-4 py-3 text-gray-300 hover:bg-green-700 hover:text-white rounded-lg transition-colors">
           <LogOut className="h-5 w-5 mr-3" />
           Sair
         </button>
