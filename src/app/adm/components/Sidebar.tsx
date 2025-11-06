@@ -3,6 +3,7 @@
 import React from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Home, ShoppingCart, BarChart3, LogOut } from 'lucide-react';
+import { logout } from '../../../lib/auth';
 
 // Tipagem das Props
 interface SidebarProps {
@@ -30,9 +31,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         { icon: BarChart3, label: 'Lotes', route: '/adm/lote' }
       ];
 
-  const handleLogout = () => {
-    // Aqui Siscaro pode adicionar lógica de logout (limpar tokens, etc.)
-    router.push('/');
+  const handleLogout = async () => {
+    await logout();
   };
 
   return (

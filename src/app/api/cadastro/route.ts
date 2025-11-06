@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import jwt from "jsonwebtoken";
 // import bcrypt from "bcryptjs"; // manter comentado por enquanto
 
 export async function POST(req: NextRequest) {
@@ -26,11 +27,34 @@ export async function POST(req: NextRequest) {
       const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
       if (!user) return NextResponse.json({ message: "Usuário não encontrado" }, { status: 401 });
 
-      const match = user.senha === password; // só para dev/teste
+      const match = user.senha === password; // ainda em texto plano (só dev)
       if (!match) return NextResponse.json({ message: "Senha incorreta" }, { status: 401 });
 
-      return NextResponse.json({ message: "Login OK", userId: user.id, userRole: user.role }, { status: 200 });
+      // gera token JWT
+      const token = jwt.sign(
+        { id: user.id, email: user.email, role: user.role },
+        process.env.JWT_SECRET!,
+        { expiresIn: "2h" }
+      );
+
+      // cria cookie com o token
+      const response = NextResponse.json({
+        message: "Login OK",
+        userId: user.id,
+        userRole: user.role,
+      });
+
+      response.cookies.set("auth_token", token, {
+        httpOnly: true,
+        sameSite: "strict",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 2 * 60 * 60, // 2h
+      });
+
+      return response;
     }
+
 
     // cadastro
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
