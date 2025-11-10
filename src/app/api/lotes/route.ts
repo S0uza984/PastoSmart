@@ -1,51 +1,32 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export async function GET(req: NextRequest) {
+async function getPrisma() {
+  const mod = await import("../../../generated/prisma");
+  const { PrismaClient } = mod as { PrismaClient: any };
+  const g = globalThis as unknown as { prisma?: InstanceType<typeof PrismaClient> };
+  g.prisma = g.prisma || new PrismaClient();
+  return g.prisma;
+}
+
+function parseLocalDate(iso?: string | null): Date | null {
+  if (!iso) return null;
+  const parts = iso.split('-').map(Number);
+  if (parts.length !== 3 || parts.some(isNaN)) return null;
+  const [y, m, d] = parts;
+  return new Date(y, m - 1, d); // cria no fuso local
+}
+
+export async function GET() {
   try {
-    // importa o Prisma Client dinamicamente
-    const mod = await import("../../../generated/prisma");
-    const { PrismaClient } = mod as { PrismaClient: any };
-
-    // singleton para hot-reload em dev
-    const g = globalThis as unknown as { prisma?: InstanceType<typeof PrismaClient> };
-    g.prisma = g.prisma || new PrismaClient();
-    const prisma = g.prisma;
-
+    const prisma = await getPrisma();
     const lotes = await prisma.lote.findMany({
-      include: {
-        bois: true,
-        _count: {
-          select: {
-            bois: true
-          }
-        }
-      },
-      orderBy: {
-        chegada: 'desc'
-      }
+      orderBy: { id: "desc" },
+      include: { bois: true },
     });
 
-    // Calcular estatísticas para cada lote
-    const lotesComEstatisticas = lotes.map((lote: any) => {
-      const pesoTotal = lote.bois.reduce((acc: number, boi: any) => acc + boi.peso, 0);
-      const pesoMedio = lote.bois.length > 0 ? pesoTotal / lote.bois.length : 0;
-      
-      return {
-        id: lote.id,
-        codigo: lote.codigo,
-        chegada: lote.chegada,
-        custo: lote.custo,
-        data_venda: lote.data_venda,
-        vacinado: lote.vacinado,
-        data_vacinacao: lote.data_vacinacao,
-        quantidadeBois: lote._count.bois,
-        pesoMedio: pesoMedio,
-        pesoTotal: pesoTotal
-      };
-    });
-
-    return NextResponse.json(lotesComEstatisticas, { status: 200 });
+    // retorna dados brutos — cálculo de nextReforco é feito no frontend
+    return NextResponse.json(lotes);
   } catch (err: any) {
     console.error("API /api/lotes GET error:", err);
     return NextResponse.json({ message: err?.message || "Erro no servidor" }, { status: 500 });
@@ -54,52 +35,30 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    // importa o Prisma Client dinamicamente
-    const mod = await import("../../../generated/prisma");
-    const { PrismaClient } = mod as { PrismaClient: any };
-
-    // singleton para hot-reload em dev
-    const g = globalThis as unknown as { prisma?: InstanceType<typeof PrismaClient> };
-    g.prisma = g.prisma || new PrismaClient();
-    const prisma = g.prisma;
-
+    const prisma = await getPrisma();
     const body = await req.json();
-    const { codigo, chegada, custo, vacinado, data_vacinacao } = body || {};
+    const { codigo, chegada, custo, vacinado, data_vacinacao, gasto_alimentacao } = body || {};
 
-    if (!codigo || !chegada || !custo) {
-      return NextResponse.json({ message: "Código, data de chegada e custo são obrigatórios" }, { status: 400 });
+    if (!codigo || !chegada || custo == null) {
+      return NextResponse.json({ message: "codigo, chegada e custo são obrigatórios" }, { status: 400 });
     }
 
-    const lote = await prisma.lote.create({
+    const chegadaDate = parseLocalDate(chegada);
+    const dataVacinDate = parseLocalDate(data_vacinacao);
+
+    const created = await prisma.lote.create({
       data: {
         codigo,
-        chegada: new Date(chegada),
-        custo: parseFloat(custo),
-        vacinado: Boolean(vacinado),
-        data_vacinacao: data_vacinacao ? new Date(data_vacinacao) : null
+        chegada: chegadaDate,
+        custo: Number(custo),
+        gasto_alimentacao: gasto_alimentacao == null ? 0 : Number(gasto_alimentacao),
+        vacinado: !!vacinado,
+        data_vacinacao: vacinado ? dataVacinDate : null,
       },
-      include: {
-        bois: true,
-        _count: {
-          select: {
-            bois: true
-          }
-        }
-      }
+      include: { bois: true },
     });
 
-    return NextResponse.json({ 
-      message: "Lote criado com sucesso", 
-      lote: {
-        id: lote.id,
-        codigo: lote.codigo,
-        chegada: lote.chegada,
-        custo: lote.custo,
-        vacinado: lote.vacinado,
-        data_vacinacao: lote.data_vacinacao,
-        quantidadeBois: lote._count.bois
-      }
-    }, { status: 201 });
+    return NextResponse.json(created, { status: 201 });
   } catch (err: any) {
     console.error("API /api/lotes POST error:", err);
     return NextResponse.json({ message: err?.message || "Erro no servidor" }, { status: 500 });

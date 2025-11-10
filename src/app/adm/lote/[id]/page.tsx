@@ -18,6 +18,7 @@ interface Lote {
   codigo: string;
   chegada: string;
   custo: number;
+  gasto_alimentacao?: number | null; // <-- novo campo
   vacinado: boolean;
   data_vacinacao: string | null;
   quantidadeBois: number;
@@ -37,6 +38,7 @@ const LoteDetailsPage = () => {
     codigo: '',
     chegada: '',
     custo: '',
+    gasto_alimentacao: '', // <-- novo campo no form (string para input)
     vacinado: false,
     data_vacinacao: ''
   });
@@ -46,6 +48,7 @@ const LoteDetailsPage = () => {
 
   useEffect(() => {
     fetchLote();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loteId]);
 
   const fetchLote = async () => {
@@ -61,6 +64,7 @@ const LoteDetailsPage = () => {
         codigo: data.codigo || '',
         chegada: data.chegada ? new Date(data.chegada).toISOString().slice(0, 10) : '',
         custo: String(data.custo ?? ''),
+        gasto_alimentacao: data.gasto_alimentacao != null ? String(data.gasto_alimentacao) : '',
         vacinado: Boolean(data.vacinado),
         data_vacinacao: data.data_vacinacao ? new Date(data.data_vacinacao).toISOString().slice(0, 10) : ''
       });
@@ -81,6 +85,21 @@ const LoteDetailsPage = () => {
       { value: 'vendido', label: 'Vendido' }
     ]}
   ];
+
+  // --- Funções para calcular e formatar próximo reforço (+1 ano) ---
+  const calcNextReforco = (isoDate: string | null | undefined): Date | null => {
+    if (!isoDate) return null;
+    const d = new Date(isoDate);
+    if (Number.isNaN(d.getTime())) return null;
+    d.setFullYear(d.getFullYear() + 1);
+    return d;
+  };
+
+  const formatPtBr = (d: Date | null | undefined) => {
+    if (!d) return '—';
+    return d.toLocaleDateString('pt-BR');
+  };
+  // --- fim funções ---
 
   if (loading) {
     return (
@@ -106,6 +125,10 @@ const LoteDetailsPage = () => {
       </div>
     );
   }
+
+  // calcula next reforço para exibição
+  const nextReforco = calcNextReforco(lote.data_vacinacao);
+  const reforcoAtrasado = nextReforco ? new Date() >= nextReforco : false;
 
   return (
     <div className="p-6">
@@ -146,10 +169,27 @@ const LoteDetailsPage = () => {
             <p className={`text-lg font-bold ${lote.vacinado ? 'text-green-600' : 'text-red-600'}`}>
               {lote.vacinado ? 'Vacinado' : 'Não vacinado'}
             </p>
-            {lote.vacinado && lote.data_vacinacao && (
-              <p className="text-sm text-gray-500 mt-1">
-                {new Date(lote.data_vacinacao).toLocaleDateString('pt-BR')}
-              </p>
+
+            {lote.vacinado && (
+              <>
+                {/* data da vacinação, se existir */}
+                <p className="text-sm text-gray-500 mt-1">
+                  {lote.data_vacinacao ? new Date(lote.data_vacinacao).toLocaleDateString('pt-BR') : '—'}
+                </p>
+
+                {/* exibe próximo reforço (+1 ano) */}
+                <p className="text-sm text-gray-700 mt-1">
+                  <strong>Próximo reforço:</strong>{' '}
+                  <span className="font-semibold">{formatPtBr(nextReforco)}</span>
+                  {nextReforco && (
+                    reforcoAtrasado ? (
+                      <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full ml-2">Reforço Atrasado</span>
+                    ) : (
+                      <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full ml-2">OK</span>
+                    )
+                  )}
+                </p>
+              </>
             )}
           </div>
         </div>
@@ -165,9 +205,18 @@ const LoteDetailsPage = () => {
 
         <div className="bg-white p-6 rounded-lg shadow border">
           <div className="text-center">
-            <p className="text-sm font-medium text-gray-600">Custo Total</p>
+            <p className="text-sm font-medium text-gray-600">Custo Compra do Lote</p>
             <p className="text-2xl font-bold text-green-600">
               R$ {lote.custo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </p>
+            {/* novo: gasto com alimentação exibido abaixo do custo */}
+            <p className="text-sm text-gray-600 mt-2">
+              <span className="block">Gasto com Alimentação:</span>
+              <span className="font-semibold text-gray-900">
+                {lote.gasto_alimentacao != null
+                  ? `R$ ${Number(lote.gasto_alimentacao).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                  : '—'}
+              </span>
             </p>
           </div>
         </div>
@@ -280,6 +329,20 @@ const LoteDetailsPage = () => {
               <label className="text-sm">Custo
                 <input type="number" step="0.01" value={editLoteForm.custo} onChange={(e) => setEditLoteForm(v => ({ ...v, custo: e.target.value }))} className="mt-1 w-full border rounded px-3 py-2" />
               </label>
+
+              {/* campo novo: gasto com alimentação */}
+              <label className="text-sm">Gasto com Alimentação (R$)
+                <input
+                  type="number"
+                  step="0.01"
+                  value={editLoteForm.gasto_alimentacao}
+                  onChange={(e) => setEditLoteForm(v => ({ ...v, gasto_alimentacao: e.target.value }))
+                  }
+                  className="mt-1 w-full border rounded px-3 py-2"
+                  placeholder="Ex: 1200.50"
+                />
+              </label>
+
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={editLoteForm.vacinado} onChange={(e) => setEditLoteForm(v => ({ ...v, vacinado: e.target.checked }))} />
                 Vacinado
@@ -294,10 +357,19 @@ const LoteDetailsPage = () => {
               <button onClick={() => setIsEditingLote(false)} className="px-4 py-2 border rounded">Cancelar</button>
               <button
                 onClick={async () => {
+                  // prepara payload convertendo strings numéricos
+                  const payload = {
+                    codigo: editLoteForm.codigo,
+                    chegada: editLoteForm.chegada,
+                    custo: editLoteForm.custo === '' ? null : Number(editLoteForm.custo),
+                    gasto_alimentacao: editLoteForm.gasto_alimentacao === '' ? null : Number(editLoteForm.gasto_alimentacao),
+                    vacinado: editLoteForm.vacinado,
+                    data_vacinacao: editLoteForm.data_vacinacao || null
+                  };
                   const res = await fetch(`/api/lotes/${loteId}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(editLoteForm)
+                    body: JSON.stringify(payload)
                   });
                   if (res.ok) {
                     setIsEditingLote(false);

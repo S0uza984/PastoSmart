@@ -30,6 +30,7 @@ model Lote {
   codigo       String
   chegada      DateTime
   custo        Float
+  gasto_alimentacao    Float?
   data_venda   DateTime?
   vacinado     Boolean   @default(false)
   data_vacinacao DateTime?

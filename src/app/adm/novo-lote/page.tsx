@@ -14,6 +14,7 @@ interface Lote {
     id: number;
     nome: string;
     dataChegada: string;
+    gasto_alimentacao?: number | null;
     custo: number;
     vacinado: boolean;
     dataVacinacao: string | null;
@@ -25,6 +26,7 @@ export default function NovoLotePage() {
     const [nomeLote, setNomeLote] = useState('');
     const [dataChegada, setDataChegada] = useState('');
     const [custoLote, setCustoLote] = useState('');
+    const [gastoAlimentacao, setGastoAlimentacao] = useState(''); // <-- novo
     const [vacinadoLote, setVacinadoLote] = useState(false);
     const [dataVacinacao, setDataVacinacao] = useState('');
 
@@ -40,6 +42,7 @@ export default function NovoLotePage() {
                         codigo: nomeLote,
                         chegada: dataChegada,
                         custo: parseFloat(custoLote),
+                        gasto_alimentacao: gastoAlimentacao === '' ? null : parseFloat(gastoAlimentacao), // <-- enviado
                         vacinado: vacinadoLote,
                         data_vacinacao: vacinadoLote ? dataVacinacao : null
                     })
@@ -119,6 +122,21 @@ export default function NovoLotePage() {
                                 onChange={(e) => setCustoLote(e.target.value)}
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
                                 placeholder="50000"
+                                step="0.01"
+                            />
+                        </div>
+
+                        {/* novo campo gasto com alimentação */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Gasto com Alimentação (R$)
+                            </label>
+                            <input
+                                type="number"
+                                value={gastoAlimentacao}
+                                onChange={(e) => setGastoAlimentacao(e.target.value)}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="Ex: 1200.50"
                                 step="0.01"
                             />
                         </div>

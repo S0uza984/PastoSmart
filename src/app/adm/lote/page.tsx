@@ -27,18 +27,38 @@ const LotePage = () => {
   const fetchLotes = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/lotes');
+      const response = await fetch("/api/lotes");
       if (!response.ok) {
-        throw new Error('Erro ao carregar lotes');
+        throw new Error("Erro ao carregar lotes");
       }
+
       const data = await response.json();
-      setLotes(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro desconhecido');
+
+      // 🔽 Cálculo direto no frontend
+      const lotesComCalculos = data.map((lote: any) => {
+        const bois = lote.bois || [];
+        const quantidadeBois = bois.length;
+        const pesoTotal = bois.reduce((acc: number, b: any) => acc + (b.peso || 0), 0);
+        const pesoMedio = quantidadeBois > 0 ? pesoTotal / quantidadeBois : 0;
+
+        return {
+          ...lote,
+          quantidadeBois,
+          pesoTotal,
+          pesoMedio,
+        };
+      });
+
+      setLotes(lotesComCalculos);
+    } catch (error: any) {
+      setError(error.message);
     } finally {
       setLoading(false);
     }
   };
+
+  // cálculo total de bois
+  const totalBois = lotes.reduce((acc, lote) => acc + (lote.quantidadeBois || 0), 0);
 
   if (loading) {
     return (
@@ -62,22 +82,9 @@ const LotePage = () => {
 
   return (
     <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Gerenciar Lotes</h1>
-          <p className="text-gray-600">Visualize e gerencie os lotes de gado</p>
-        </div>
-        <Link href="/adm/novo-lote">
-          <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center">
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            Adicionar Novo Lote
-          </button>
-        </Link>
-      </div>
-
+      {/* Cards de estatísticas */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-6">
+        {/* Total de Lotes */}
         <div className="bg-white p-6 rounded-lg shadow border">
           <div className="flex items-center">
             <svg className="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -90,6 +97,7 @@ const LotePage = () => {
           </div>
         </div>
 
+        {/* Total de Bois */}
         <div className="bg-white p-6 rounded-lg shadow border">
           <div className="flex items-center">
             <svg className="h-4 w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -97,13 +105,12 @@ const LotePage = () => {
             </svg>
             <div className="ml-2">
               <p className="text-sm font-medium text-gray-600">Total de Bois</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {lotes.reduce((acc, lote) => acc + lote.quantidadeBois, 0)}
-              </p>
+              <p className="text-2xl font-bold text-gray-900">{String(totalBois)}</p>
             </div>
           </div>
         </div>
 
+        {/* Lotes vacinados */}
         <div className="bg-white p-6 rounded-lg shadow border">
           <div className="flex items-center">
             <svg className="h-4 w-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -119,10 +126,11 @@ const LotePage = () => {
         </div>
       </div>
 
+      {/* Cards dos lotes */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {lotes.map((lote) => (
           <div key={lote.id} className="bg-white rounded-lg shadow border overflow-hidden">
-            {/* Header do Card */}
+            {/* Card individual */}
             <div className="bg-green-600 text-white p-4 cursor-pointer hover:bg-green-700 transition-colors">
               <Link href={`/adm/lote/${lote.id}`}>
                 <div>
@@ -132,7 +140,6 @@ const LotePage = () => {
               </Link>
             </div>
 
-            {/* Conteúdo do Card */}
             <div className="p-4 space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Quantidade de Bois:</span>
@@ -142,7 +149,9 @@ const LotePage = () => {
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Peso Médio:</span>
                 <span className="font-bold text-lg text-blue-600">
-                  {lote.pesoMedio.toFixed(1)} kg
+                  {typeof lote.pesoMedio === 'number' && Number.isFinite(lote.pesoMedio)
+                    ? `${lote.pesoMedio.toFixed(1)} kg`
+                    : '—'}
                 </span>
               </div>
 
@@ -175,18 +184,6 @@ const LotePage = () => {
                   R$ {lote.custo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </span>
               </div>
-
-              {/* Botão de Adicionar Bois */}
-              <div className="pt-2 border-t">
-                <Link href={`/adm/lote/${lote.id}/adicionar-bois`}>
-                  <button className="w-full px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors flex items-center justify-center">
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                    Adicionar Bois
-                  </button>
-                </Link>
-              </div>
             </div>
           </div>
         ))}
@@ -196,4 +193,3 @@ const LotePage = () => {
 };
 
 export default LotePage;
-

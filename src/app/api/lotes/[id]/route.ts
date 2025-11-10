@@ -1,21 +1,30 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+async function getPrisma() {
+  const mod = await import("../../../../generated/prisma");
+  const { PrismaClient } = mod as { PrismaClient: any };
+
+  const g = globalThis as unknown as { prisma?: InstanceType<typeof PrismaClient> };
+  g.prisma = g.prisma || new PrismaClient();
+  return g.prisma;
+}
+
+function parseLocalDate(iso?: string | null): Date | null {
+  if (!iso) return null;
+  const parts = iso.split('-').map(Number);
+  if (parts.length !== 3 || parts.some(isNaN)) return null;
+  const [y, m, d] = parts;
+  return new Date(y, m - 1, d);
+}
+
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> } // <-- mudado para Promise
 ) {
   try {
-    // importa o Prisma Client dinamicamente
-    const mod = await import("../../../../generated/prisma");
-    const { PrismaClient } = mod as { PrismaClient: any };
-
-    // singleton para hot-reload em dev
-    const g = globalThis as unknown as { prisma?: InstanceType<typeof PrismaClient> };
-    g.prisma = g.prisma || new PrismaClient();
-    const prisma = g.prisma;
-
-    const { id } = await params;
+    const { id } = await params; // <-- await aqui
+    const prisma = await getPrisma();
     const loteId = parseInt(id);
 
     if (isNaN(loteId)) {
@@ -42,7 +51,6 @@ export async function GET(
       return NextResponse.json({ message: "Lote não encontrado" }, { status: 404 });
     }
 
-    // Calcular estatísticas do lote
     const pesoTotal = lote.bois.reduce((acc: number, boi: { peso: number }) => acc + boi.peso, 0);
     const pesoMedio = lote.bois.length > 0 ? pesoTotal / lote.bois.length : 0;
     
@@ -51,10 +59,11 @@ export async function GET(
       codigo: lote.codigo,
       chegada: lote.chegada,
       custo: lote.custo,
-      data_venda: lote.data_venda,
+      data_venda: (lote as any).data_venda,
       vacinado: lote.vacinado,
       data_vacinacao: lote.data_vacinacao,
-      quantidadeBois: lote._count.bois,
+      gasto_alimentacao: (lote as any).gasto_alimentacao ?? null,
+      quantidadeBois: lote._count?.bois ?? lote.bois.length,
       pesoMedio: pesoMedio,
       pesoTotal: pesoTotal,
       bois: lote.bois.map((boi: { id: number; peso: number; status: string; alerta: string | null }) => ({
@@ -74,41 +83,58 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> } // <-- mudado para Promise
 ) {
   try {
-    const mod = await import("../../../../generated/prisma");
-    const { PrismaClient } = mod as { PrismaClient: any };
+    const { id } = await params; // <-- await aqui
+    const prisma = await getPrisma();
+    const loteId = parseInt(id);
 
-    const g = globalThis as unknown as { prisma?: InstanceType<typeof PrismaClient> };
-    g.prisma = g.prisma || new PrismaClient();
-    const prisma = g.prisma;
-
-    const _params = await params;
-    const loteId = parseInt(_params.id);
     if (isNaN(loteId)) {
       return NextResponse.json({ message: "ID do lote inválido" }, { status: 400 });
     }
 
     const body = await req.json();
-    const { codigo, chegada, custo, vacinado, data_vacinacao } = body || {};
+    const { codigo, chegada, custo, vacinado, data_vacinacao, gasto_alimentacao } = body || {};
 
-    // Monta objeto de dados apenas com campos fornecidos
     const data: any = {};
     if (typeof codigo !== 'undefined') data.codigo = codigo;
-    if (typeof chegada !== 'undefined') data.chegada = new Date(chegada);
-    if (typeof custo !== 'undefined') data.custo = parseFloat(custo);
+    if (typeof chegada !== 'undefined') data.chegada = chegada ? parseLocalDate(chegada) : null;
+    if (typeof custo !== 'undefined') data.custo = custo === null ? null : parseFloat(custo);
     if (typeof vacinado !== 'undefined') data.vacinado = Boolean(vacinado);
-    if (typeof data_vacinacao !== 'undefined') data.data_vacinacao = data_vacinacao ? new Date(data_vacinacao) : null;
+    if (typeof data_vacinacao !== 'undefined') data.data_vacinacao = data_vacinacao ? parseLocalDate(data_vacinacao) : null;
+    if (typeof gasto_alimentacao !== 'undefined') data.gasto_alimentacao = gasto_alimentacao === null ? 0 : Number(gasto_alimentacao);
 
     const updated = await prisma.lote.update({
       where: { id: loteId },
-      data
+      data,
+      include: { bois: true }
     });
 
     return NextResponse.json({ message: 'Lote atualizado com sucesso', lote: updated }, { status: 200 });
   } catch (err: any) {
     console.error("API /api/lotes/[id] PUT error:", err);
+    return NextResponse.json({ message: err?.message || "Erro no servidor" }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> } // <-- mudado para Promise
+) {
+  try {
+    const { id } = await params; // <-- await aqui
+    const prisma = await getPrisma();
+    const loteId = parseInt(id);
+
+    if (isNaN(loteId)) {
+      return NextResponse.json({ message: "ID do lote inválido" }, { status: 400 });
+    }
+
+    await prisma.lote.delete({ where: { id: loteId } });
+    return NextResponse.json({ message: "Deletado" });
+  } catch (err: any) {
+    console.error("API /api/lotes/[id] DELETE error:", err);
     return NextResponse.json({ message: err?.message || "Erro no servidor" }, { status: 500 });
   }
 }

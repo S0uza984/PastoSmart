@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+} from 'recharts';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { TableFilter, FilterColumn } from '@/app/components/TableFilter';
@@ -18,6 +20,7 @@ interface Lote {
   codigo: string;
   chegada: string;
   custo: number;
+  gasto_alimentacao?: number | null;
   vacinado: boolean;
   data_vacinacao: string | null;
   quantidadeBois: number;
@@ -42,9 +45,7 @@ const PeaoLoteDetailsPage = () => {
     try {
       setLoading(true);
       const response = await fetch(`/api/lotes/${loteId}`);
-      if (!response.ok) {
-        throw new Error('Erro ao carregar lote');
-      }
+      if (!response.ok) throw new Error('Erro ao carregar lote');
       const data = await response.json();
       setLote(data);
       setFilteredBois(data.bois || []);
@@ -58,37 +59,52 @@ const PeaoLoteDetailsPage = () => {
   const filterColumns: FilterColumn[] = [
     { key: 'id', label: 'ID', type: 'number' },
     { key: 'peso', label: 'Peso (kg)', type: 'number' },
-    { key: 'status', label: 'Status', type: 'select', options: [
-      { value: 'ativo', label: 'Ativo' },
-      { value: 'inativo', label: 'Inativo' },
-      { value: 'vendido', label: 'Vendido' }
-    ]}
+    {
+      key: 'status', label: 'Status', type: 'select', options: [
+        { value: 'ativo', label: 'Ativo' },
+        { value: 'inativo', label: 'Inativo' },
+        { value: 'vendido', label: 'Vendido' }
+      ]
+    }
   ];
 
-  if (loading) {
-    return (
-      <div className="p-6">
-        <div className="flex justify-center items-center h-64">
-          <div className="text-lg text-gray-600">Carregando lote...</div>
-        </div>
-      </div>
-    );
-  }
+  const calcNextReforco = (isoDate: string | null | undefined): Date | null => {
+    if (!isoDate) return null;
+    const d = new Date(isoDate);
+    if (Number.isNaN(d.getTime())) return null;
+    d.setFullYear(d.getFullYear() + 1);
+    return d;
+  };
 
-  if (error || !lote) {
-    return (
-      <div className="p-6">
-        <h1 className="text-2xl font-bold text-red-600">
-          {error || 'Lote não encontrado'}
-        </h1>
-        <Link href="/peao/lote">
-          <button className="mt-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
-            Voltar para Lotes
-          </button>
-        </Link>
+  const formatPtBr = (d: Date | null | undefined) => d ? d.toLocaleDateString('pt-BR') : '—';
+
+  if (loading) return (
+    <div className="p-6">
+      <div className="flex justify-center items-center h-64 text-lg text-gray-600">
+        Carregando lote...
       </div>
-    );
-  }
+    </div>
+  );
+
+  if (error || !lote) return (
+    <div className="p-6">
+      <h1 className="text-2xl font-bold text-red-600">
+        {error || 'Lote não encontrado'}
+      </h1>
+      <Link href="/peao/lote">
+        <button className="mt-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+          Voltar para Lotes
+        </button>
+      </Link>
+    </div>
+  );
+
+  const nextReforco = calcNextReforco(lote.data_vacinacao);
+  const reforcoAtrasado = nextReforco ? new Date() >= nextReforco : false;
+
+  const quantidadeBois = lote.quantidadeBois ?? lote.bois.length ?? 0;
+  const pesoTotal = lote.pesoTotal ?? lote.bois.reduce((s, b) => s + b.peso, 0);
+  const pesoMedio = lote.pesoMedio ?? (quantidadeBois > 0 ? pesoTotal / quantidadeBois : 0);
 
   return (
     <div className="p-6">
@@ -104,63 +120,78 @@ const PeaoLoteDetailsPage = () => {
         </Link>
       </div>
 
-      {/* Cards de Estatísticas */}
+      {/* --- Cards de Estatísticas --- */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5 mb-6">
-        <div className="bg-white p-6 rounded-lg shadow border">
-          <div className="text-center">
-            <p className="text-sm font-medium text-gray-600">Quantidade de Bois</p>
-            <p className="text-3xl font-bold text-gray-900">{lote.quantidadeBois}</p>
-          </div>
+        {/* Quantidade */}
+        <div className="bg-white p-6 rounded-lg shadow border text-center">
+          <p className="text-sm font-medium text-gray-600">Quantidade de Bois</p>
+          <p className="text-3xl font-bold text-gray-900">{quantidadeBois}</p>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow border">
-          <div className="text-center">
-            <p className="text-sm font-medium text-gray-600">Peso Médio</p>
-            <p className="text-3xl font-bold text-green-600">{lote.pesoMedio.toFixed(1)} kg</p>
-          </div>
+        {/* Peso médio */}
+        <div className="bg-white p-6 rounded-lg shadow border text-center">
+          <p className="text-sm font-medium text-gray-600">Peso Médio</p>
+          <p className="text-3xl font-bold text-green-600">
+            {pesoMedio ? `${pesoMedio.toFixed(1)} kg` : '—'}
+          </p>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow border">
-          <div className="text-center">
-            <p className="text-sm font-medium text-gray-600">Vacinação</p>
-            <p className={`text-lg font-bold ${lote.vacinado ? 'text-green-600' : 'text-red-600'}`}>
-              {lote.vacinado ? 'Vacinado' : 'Não vacinado'}
-            </p>
-            {lote.vacinado && lote.data_vacinacao && (
+        {/* Vacinação */}
+        <div className="bg-white p-6 rounded-lg shadow border text-center">
+          <p className="text-sm font-medium text-gray-600">Vacinação</p>
+          <p className={`text-lg font-bold ${lote.vacinado ? 'text-green-600' : 'text-red-600'}`}>
+            {lote.vacinado ? 'Vacinado' : 'Não vacinado'}
+          </p>
+          {lote.vacinado && (
+            <>
               <p className="text-sm text-gray-500 mt-1">
-                {new Date(lote.data_vacinacao).toLocaleDateString('pt-BR')}
+                {lote.data_vacinacao ? new Date(lote.data_vacinacao).toLocaleDateString('pt-BR') : '—'}
               </p>
-            )}
-          </div>
+              <p className="text-sm text-gray-700 mt-1">
+                <strong>Próximo reforço:</strong>{' '}
+                <span className="font-semibold">{formatPtBr(nextReforco)}</span>
+                {nextReforco && (
+                  reforcoAtrasado ? (
+                    <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full ml-2">Atrasado</span>
+                  ) : (
+                    <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full ml-2">OK</span>
+                  )
+                )}
+              </p>
+            </>
+          )}
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow border">
-          <div className="text-center">
-            <p className="text-sm font-medium text-gray-600">Data de Chegada</p>
-            <p className="text-lg font-bold text-gray-900">
-              {new Date(lote.chegada).toLocaleDateString('pt-BR')}
-            </p>
-          </div>
+        {/* Chegada */}
+        <div className="bg-white p-6 rounded-lg shadow border text-center">
+          <p className="text-sm font-medium text-gray-600">Data de Chegada</p>
+          <p className="text-lg font-bold text-gray-900">
+            {new Date(lote.chegada).toLocaleDateString('pt-BR')}
+          </p>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow border">
-          <div className="text-center">
-            <p className="text-sm font-medium text-gray-600">Custo Total</p>
-            <p className="text-2xl font-bold text-green-600">
-              R$ {lote.custo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </p>
-          </div>
+        {/* Custo + Alimentação */}
+        <div className="bg-white p-6 rounded-lg shadow border text-center">
+          <p className="text-sm font-medium text-gray-600">Custo Compra do Lote</p>
+          <p className="text-2xl font-bold text-green-600">
+            R$ {Number(lote.custo ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          </p>
+          <p className="text-sm text-gray-600 mt-2">
+            <span className="block">Gasto com Alimentação:</span>
+            <span className="font-semibold text-gray-900">
+              {lote.gasto_alimentacao != null
+                ? `R$ ${Number(lote.gasto_alimentacao).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                : '—'}
+            </span>
+          </p>
         </div>
       </div>
 
-      {/* Gráfico de Peso Individual */}
+      {/* --- Gráfico --- */}
       <div className="bg-white p-6 rounded-lg shadow border mb-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Peso Individual dos Bois</h3>
         <ResponsiveContainer width="100%" height={400}>
-          <BarChart data={lote.bois.map((boi, index) => ({ 
-            nome: `Boi ${index + 1}`, 
-            peso: boi.peso 
-          }))}>
+          <BarChart data={lote.bois.map((b, i) => ({ nome: `Boi ${i + 1}`, peso: b.peso }))}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="nome" />
             <YAxis />
@@ -170,41 +201,35 @@ const PeaoLoteDetailsPage = () => {
         </ResponsiveContainer>
       </div>
 
-      {/* Tabela de Bois */}
+      {/* --- Tabela --- */}
       <div className="bg-white rounded-lg shadow border">
         <div className="p-6 border-b border-gray-200 flex justify-between items-center">
           <h3 className="text-lg font-semibold text-gray-900">Lista Detalhada dos Bois</h3>
-          <TableFilter
-            data={lote.bois}
-            columns={filterColumns}
-            onFilterChange={setFilteredBois}
-          />
+          <TableFilter data={lote.bois} columns={filterColumns} onFilterChange={setFilteredBois} />
         </div>
-        <div className="p-6">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="text-xs text-gray-700 uppercase bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3">ID</th>
-                  <th className="px-6 py-3">Nome</th>
-                  <th className="px-6 py-3">Peso (kg)</th>
-                  <th className="px-6 py-3">Status</th>
-                  <th className="px-6 py-3">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredBois.map((boi, index) => {
-                  const originalIndex = lote.bois.findIndex(b => b.id === boi.id);
-                  return (
+        <div className="p-6 overflow-x-auto">
+          <table className="w-full text-sm text-left">
+            <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+              <tr>
+                <th className="px-6 py-3">ID</th>
+                <th className="px-6 py-3">Nome</th>
+                <th className="px-6 py-3">Peso (kg)</th>
+                <th className="px-6 py-3">Status</th>
+                <th className="px-6 py-3">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredBois.map((boi, index) => {
+                const originalIndex = lote.bois.findIndex(b => b.id === boi.id);
+                return (
                   <tr key={boi.id} className="bg-white border-b hover:bg-gray-50">
                     <td className="px-6 py-4 font-medium text-gray-900">{boi.id}</td>
                     <td className="px-6 py-4">Boi {originalIndex >= 0 ? originalIndex + 1 : index + 1}</td>
                     <td className="px-6 py-4 font-semibold">{boi.peso} kg</td>
                     <td className="px-6 py-4">
-                      <span className={boi.status === 'Ativo' ? 
-                        'bg-green-100 text-green-800 border border-green-300 px-2 py-1 rounded text-xs' : 
-                        'bg-yellow-100 text-yellow-800 border border-yellow-300 px-2 py-1 rounded text-xs'
-                      }>
+                      <span className={boi.status === 'Ativo'
+                        ? 'bg-green-100 text-green-800 border border-green-300 px-2 py-1 rounded text-xs'
+                        : 'bg-yellow-100 text-yellow-800 border border-yellow-300 px-2 py-1 rounded text-xs'}>
                         {boi.status}
                       </span>
                     </td>
@@ -217,14 +242,13 @@ const PeaoLoteDetailsPage = () => {
                     </td>
                   </tr>
                 );
-                })}
-              </tbody>
-            </table>
-          </div>
+              })}
+            </tbody>
+          </table>
         </div>
       </div>
 
-      {/* Botão para Adicionar Bois */}
+      {/* --- Botão --- */}
       <div className="mt-6 flex justify-center">
         <Link href={`/peao/lote/${loteId}/adicionar-bois`}>
           <button className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center">

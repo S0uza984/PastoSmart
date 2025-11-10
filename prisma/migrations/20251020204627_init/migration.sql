@@ -17,6 +17,7 @@ CREATE TABLE `Lote` (
     `codigo` VARCHAR(191) NOT NULL,
     `chegada` DATETIME(3) NOT NULL,
     `custo` DOUBLE NOT NULL,
+    `gasto_alimentacao` DOUBLE,
     `data_venda` DATETIME(3) NULL,
     `vacinado` BOOLEAN NOT NULL DEFAULT false,
     `data_vacinacao` DATETIME(3) NULL,
