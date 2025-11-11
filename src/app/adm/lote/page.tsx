@@ -3,16 +3,23 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 
+interface Boi {
+  id: number;
+  peso: number;
+}
+
 interface Lote {
   id: number;
   codigo: string;
   chegada: string;
   custo: number;
+  gasto_alimentacao?: number | null;
   vacinado: boolean;
   data_vacinacao: string | null;
-  quantidadeBois: number;
-  pesoMedio: number;
-  pesoTotal: number;
+  quantidadeBois?: number;
+  pesoMedio?: number | null;
+  pesoTotal?: number | null;
+  bois?: Boi[];
 }
 
 const LotePage = () => {
@@ -27,18 +34,18 @@ const LotePage = () => {
   const fetchLotes = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/lotes");
+      const response = await fetch('/api/lotes');
       if (!response.ok) {
-        throw new Error("Erro ao carregar lotes");
+        throw new Error('Erro ao carregar lotes');
       }
-
       const data = await response.json();
 
-      // 🔽 Cálculo direto no frontend
-      const lotesComCalculos = data.map((lote: any) => {
-        const bois = lote.bois || [];
-        const quantidadeBois = bois.length;
-        const pesoTotal = bois.reduce((acc: number, b: any) => acc + (b.peso || 0), 0);
+      // Calcula peso médio e total de cada lote no front
+      const lotesComCalculo = data.map((lote: Lote) => {
+        const quantidadeBois = Array.isArray(lote.bois) ? lote.bois.length : 0;
+        const pesoTotal = Array.isArray(lote.bois)
+          ? lote.bois.reduce((acc, boi) => acc + (boi.peso ?? 0), 0)
+          : 0;
         const pesoMedio = quantidadeBois > 0 ? pesoTotal / quantidadeBois : 0;
 
         return {
@@ -49,16 +56,17 @@ const LotePage = () => {
         };
       });
 
-      setLotes(lotesComCalculos);
-    } catch (error: any) {
-      setError(error.message);
+      setLotes(lotesComCalculo);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro desconhecido');
     } finally {
       setLoading(false);
     }
   };
 
-  // cálculo total de bois
+  // Totais gerais (topo)
   const totalBois = lotes.reduce((acc, lote) => acc + (lote.quantidadeBois || 0), 0);
+  const totalVacinados = lotes.filter((l) => l.vacinado).length;
 
   if (loading) {
     return (
@@ -82,7 +90,31 @@ const LotePage = () => {
 
   return (
     <div className="p-6">
-      {/* Cards de estatísticas */}
+      {/* Cabeçalho */}
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Gerenciar Lotes</h1>
+          <p className="text-gray-600">Visualize e gerencie os lotes de gado</p>
+        </div>
+        <Link href="/adm/lote/novo-lote">
+          <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center">
+            <svg
+              className="w-4 h-4 mr-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+              />
+            </svg>
+            Adicionar Novo Lote
+          </button>
+        </Link>
+      </div>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-6">
         {/* Total de Lotes */}
         <div className="bg-white p-6 rounded-lg shadow border">
@@ -128,65 +160,100 @@ const LotePage = () => {
 
       {/* Cards dos lotes */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {lotes.map((lote) => (
-          <div key={lote.id} className="bg-white rounded-lg shadow border overflow-hidden">
-            {/* Card individual */}
-            <div className="bg-green-600 text-white p-4 cursor-pointer hover:bg-green-700 transition-colors">
-              <Link href={`/adm/lote/${lote.id}`}>
-                <div>
-                  <h3 className="text-xl font-bold">{lote.codigo}</h3>
-                  <p className="text-green-100 text-sm">Clique para ver estatísticas</p>
-                </div>
-              </Link>
-            </div>
+        {lotes.map((lote) => {
+          const quantidadeBois = lote.quantidadeBois || 0;
+          const pesoMedio = lote.pesoMedio || 0;
+          const gastoAlimentacao = lote.gasto_alimentacao || 0;
 
-            <div className="p-4 space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Quantidade de Bois:</span>
-                <span className="font-bold text-lg text-gray-900">{lote.quantidadeBois}</span>
+          return (
+            <div key={lote.id} className="bg-white rounded-lg shadow border overflow-hidden">
+              <div className="bg-green-600 text-white p-4 cursor-pointer hover:bg-green-700 transition-colors">
+                <Link href={`/adm/lote/${lote.id}`}>
+                  <div>
+                    <h3 className="text-xl font-bold">{lote.codigo}</h3>
+                    <p className="text-green-100 text-sm">Clique para ver estatísticas</p>
+                  </div>
+                </Link>
               </div>
 
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Peso Médio:</span>
-                <span className="font-bold text-lg text-blue-600">
-                  {typeof lote.pesoMedio === 'number' && Number.isFinite(lote.pesoMedio)
-                    ? `${lote.pesoMedio.toFixed(1)} kg`
-                    : '—'}
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Vacinação:</span>
-                <span className={`font-bold text-lg ${lote.vacinado ? 'text-green-600' : 'text-red-600'}`}>
-                  {lote.vacinado ? 'Vacinado' : 'Não vacinado'}
-                </span>
-              </div>
-
-              {lote.vacinado && lote.data_vacinacao && (
+              <div className="p-4 space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Data da Vacinação:</span>
-                  <span className="font-bold text-gray-900">
-                    {new Date(lote.data_vacinacao).toLocaleDateString('pt-BR')}
+                  <span className="text-gray-600">Quantidade de Bois:</span>
+                  <span className="font-bold text-lg text-gray-900">{quantidadeBois}</span>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Peso Médio:</span>
+                  <span className="font-bold text-lg text-green-600">
+                    {pesoMedio > 0 ? `${pesoMedio.toFixed(1)} kg` : '—'}
                   </span>
                 </div>
-              )}
 
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Data de Chegada:</span>
-                <span className="font-bold text-gray-900">
-                  {new Date(lote.chegada).toLocaleDateString('pt-BR')}
-                </span>
-              </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Vacinação:</span>
+                  <span
+                    className={`font-bold text-lg ${
+                      lote.vacinado ? 'text-green-600' : 'text-red-600'
+                    }`}
+                  >
+                    {lote.vacinado ? 'Vacinado' : 'Não vacinado'}
+                  </span>
+                </div>
 
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Custo Total:</span>
-                <span className="font-bold text-lg text-green-600">
-                  R$ {lote.custo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                </span>
+                {lote.vacinado && lote.data_vacinacao && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Data da Vacinação:</span>
+                    <span className="font-bold text-gray-900">
+                      {new Date(lote.data_vacinacao).toLocaleDateString('pt-BR')}
+                    </span>
+                  </div>
+                )}
+
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Data de Chegada:</span>
+                  <span className="font-bold text-gray-900">
+                    {new Date(lote.chegada).toLocaleDateString('pt-BR')}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Custo Compra do Lote:</span>
+                  <span className="font-bold text-lg text-green-600">
+                    R$ {lote.custo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Gasto Alimentação:</span>
+                  <span className="font-bold text-lg text-blue-600">
+                    R$ {gastoAlimentacao.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+
+                <div className="pt-2 border-t space-y-2">
+                  <Link href={`/adm/lote/${lote.id}/adicionar-bois`}>
+                    <button className="w-full px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors flex items-center justify-center">
+                      <svg
+                        className="w-4 h-4 mr-2"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                        />
+                      </svg>
+                      Adicionar Bois
+                    </button>
+                  </Link>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
