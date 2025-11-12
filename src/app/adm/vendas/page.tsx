@@ -14,6 +14,7 @@ interface VendaAPI {
     codigo: string;
     chegada: string;
     custo: number;
+    gasto_alimentacao?: number | null;
     vacinado: boolean;
     quantidadeBois: number;
   };
@@ -27,6 +28,7 @@ interface LoteDisponivel {
   chegada: string;
   custo: number;
   vacinado: boolean;
+  gasto_alimentacao?: number | null;
   quantidadeBois: number;
   pesoMedio: number;
   pesoTotal: number;
@@ -232,9 +234,9 @@ export default function VendasPage() {
                 >
                   <option value="">Selecione o lote</option>
                   {lotes.map(lote => (
-                    <option key={lote.id} value={lote.id}>
-                      {lote.codigo} (Custo: R$ {lote.custo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })})
-                    </option>
+                              <option key={lote.id} value={lote.id}>
+                                {lote.codigo} (Custo: R$ {(Number(lote.custo || 0) + Number(lote.gasto_alimentacao || 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })})
+                              </option>
                   ))}
                 </select>
               </div>
@@ -276,9 +278,10 @@ export default function VendasPage() {
               <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 {lotes.find(l => l.id === parseInt(loteVendidoId)) && (() => {
                   const loteSelecionado = lotes.find(l => l.id === parseInt(loteVendidoId))!;
-                  const lucroEstimado = parseFloat(valorVenda || '0') - loteSelecionado.custo;
-                  const margemEstimada = loteSelecionado.custo > 0 
-                    ? (lucroEstimado / loteSelecionado.custo * 100).toFixed(2)
+                  const custoTotal = Number(loteSelecionado.custo || 0) + Number(loteSelecionado.gasto_alimentacao || 0);
+                  const lucroEstimado = parseFloat(valorVenda || '0') - custoTotal;
+                  const margemEstimada = custoTotal > 0 
+                    ? (lucroEstimado / custoTotal * 100).toFixed(2)
                     : '0';
                   
                   return (
@@ -286,7 +289,7 @@ export default function VendasPage() {
                       <div>
                         <p className="text-gray-600">Custo do Lote</p>
                         <p className="font-semibold text-gray-800">
-                          R$ {loteSelecionado.custo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          R$ {custoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </p>
                       </div>
                       <div>
@@ -362,7 +365,7 @@ export default function VendasPage() {
                       {venda.lote.codigo}
                     </td>
                     <td className="px-6 py-4 text-right text-sm">
-                      R$ {venda.lote.custo.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      R$ {(Number(venda.lote.custo || 0) + Number(venda.lote.gasto_alimentacao || 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
                     <td className="px-6 py-4 text-right text-sm font-semibold text-blue-600">
                       R$ {venda.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}

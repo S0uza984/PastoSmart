@@ -6,6 +6,7 @@ export interface LoteComEstatisticas {
     codigo: string;
     chegada: string;
     custo: number;
+    gasto_alimentacao?: number | null;
     data_venda: string | null;
     vacinado: boolean;
     data_vacinacao: string | null;
@@ -70,7 +71,8 @@ async function fetchVendas(): Promise<Venda[]> {
       loteId: venda.loteId,
       loteName: venda.Lote.codigo,
       dataVenda: venda.dataVenda.toISOString(),
-      valor: venda.valor
+      // garante que valor seja um number (Prisma pode retornar Decimal)
+      valor: Number(venda.valor)
     }));
   } catch (error) {
     console.error('Erro ao buscar vendas:', error);
@@ -89,9 +91,26 @@ export default async function AdminHomePage() {
   }, 0);
   
   const totalVendasValor = vendas.reduce((acc, v) => {
-    const valor = typeof v.valor === 'number' ? v.valor : 0;
+    // torna o cálculo tolerante a strings/Decimal: converte para number e trata NaN
+    const valorNum = Number((v as any).valor);
+    const valor = Number.isFinite(valorNum) ? valorNum : 0;
     return acc + valor;
   }, 0);
+  // soma do gasto com alimentação (campo opcional)
+  const totalGastoAlimentacao = lotes.reduce((acc, l) => {
+    const g = typeof l.gasto_alimentacao === 'number' ? l.gasto_alimentacao : 0;
+    return acc + g;
+  }, 0);
+
+  // soma do custo de todos os lotes (agora inclui também gasto com alimentação)
+  const totalCusto = lotes.reduce((acc, l) => {
+    const c = typeof l.custo === 'number' ? l.custo : 0;
+    const g = typeof l.gasto_alimentacao === 'number' ? l.gasto_alimentacao : 0;
+    return acc + c + g;
+  }, 0);
+
+  // lucro = vendas - (custo + gasto_alimentacao)
+  const lucro = totalVendasValor - totalCusto;
   
   const totalLotesVacinados = lotes.filter(lote => lote.vacinado).length;
 
@@ -119,6 +138,9 @@ export default async function AdminHomePage() {
             R$ {totalVendasValor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
           <p className="text-sm text-gray-500 mt-1">{String(vendas.length)} vendas realizadas</p>
+          <p className="text-sm font-semibold text-gray-700 mt-2">
+            Lucro líquido: <span className="text-green-600">R$ {lucro.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          </p>
         </div>
         
         <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-purple-600">

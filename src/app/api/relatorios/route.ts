@@ -116,7 +116,8 @@ async function gerarRelatórioVendas(
       Lote: {
         select: {
           codigo: true,
-          custo: true
+          custo: true,
+          gasto_alimentacao: true
         }
       }
     },
@@ -130,15 +131,19 @@ async function gerarRelatórioVendas(
   });
 
   const dadosFormatados = vendas.map((venda: any) => {
-    const lucro = venda.valor - venda.Lote.custo;
-    const margemLucro = ((lucro / venda.Lote.custo) * 100).toFixed(2);
+    const valorNum = Number(venda.valor);
+    const loteCusto = Number(venda.Lote.custo || 0);
+    const loteGasto = Number(venda.Lote.gasto_alimentacao || 0);
+    const custoTotal = loteCusto + loteGasto;
+    const lucro = valorNum - custoTotal;
+    const margemLucro = custoTotal > 0 ? ((lucro / custoTotal) * 100).toFixed(2) : '0.00';
 
     return {
       id: venda.id,
       lote: venda.Lote.codigo,
       dataVenda: new Date(venda.dataVenda).toLocaleDateString('pt-BR'),
-      valor: venda.valor.toFixed(2),
-      custoBoi: venda.Lote.custo.toFixed(2),
+      valor: valorNum.toFixed(2),
+      custoBoi: custoTotal.toFixed(2),
       lucro: lucro.toFixed(2),
       margemLucro: `${margemLucro}%`
     };
@@ -174,16 +179,19 @@ async function gerarRelatórioLucro(
   });
 
   const dadosFormatados = lotes.map((lote: any) => {
-    const totalVendas = lote.vendas.reduce((acc: number, v: any) => acc + v.valor, 0);
-    const lucroTotal = totalVendas - lote.custo;
-    const margemLucro = lote.custo > 0 ? ((lucroTotal / lote.custo) * 100).toFixed(2) : '0.00';
+    const totalVendas = lote.vendas.reduce((acc: number, v: any) => acc + Number(v.valor || 0), 0);
+    const loteCusto = Number(lote.custo || 0);
+    const loteGasto = Number(lote.gasto_alimentacao || 0);
+    const custoTotal = loteCusto + loteGasto;
+    const lucroTotal = totalVendas - custoTotal;
+    const margemLucro = custoTotal > 0 ? ((lucroTotal / custoTotal) * 100).toFixed(2) : '0.00';
     const lucroPorBoi = lote.bois.length > 0 ? (lucroTotal / lote.bois.length).toFixed(2) : '0.00';
 
     return {
       id: lote.id,
       codigo: lote.codigo,
       quantidadeBois: lote.bois.length,
-      custoBois: lote.custo.toFixed(2),
+      custoBois: custoTotal.toFixed(2),
       valorVenda: totalVendas.toFixed(2),
       lucroTotal: lucroTotal.toFixed(2),
       margemLucro: `${margemLucro}%`,

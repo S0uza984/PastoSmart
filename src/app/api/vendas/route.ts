@@ -21,6 +21,7 @@ export async function GET(req: NextRequest) {
             codigo: true,
             chegada: true,
             custo: true,
+            gasto_alimentacao: true,
             vacinado: true,
             data_vacinacao: true,
             _count: {
@@ -37,22 +38,32 @@ export async function GET(req: NextRequest) {
     });
 
     // Formatar resposta
-    const vendasFormatadas = vendas.map((venda: any) => ({
-      id: venda.id,
-      dataVenda: venda.dataVenda,
-      valor: venda.valor,
-      loteId: venda.loteId,
-      lote: {
-        id: venda.Lote.id,
-        codigo: venda.Lote.codigo,
-        chegada: venda.Lote.chegada,
-        custo: venda.Lote.custo,
-        vacinado: venda.Lote.vacinado,
-        quantidadeBois: venda.Lote._count.bois
-      },
-      lucro: venda.valor - venda.Lote.custo,
-      margemLucro: ((venda.valor - venda.Lote.custo) / venda.Lote.custo * 100).toFixed(2)
-    }));
+    const vendasFormatadas = vendas.map((venda: any) => {
+      const valorNum = Number(venda.valor);
+      const loteCusto = Number(venda.Lote.custo || 0);
+      const loteGasto = Number(venda.Lote.gasto_alimentacao || 0);
+      const custoTotal = loteCusto + loteGasto;
+      const lucroCalc = valorNum - custoTotal;
+      const margem = custoTotal > 0 ? (lucroCalc / custoTotal * 100) : 0;
+
+      return {
+        id: venda.id,
+        dataVenda: venda.dataVenda,
+        valor: valorNum,
+        loteId: venda.loteId,
+        lote: {
+          id: venda.Lote.id,
+          codigo: venda.Lote.codigo,
+          chegada: venda.Lote.chegada,
+          custo: loteCusto,
+          gasto_alimentacao: loteGasto,
+          vacinado: venda.Lote.vacinado,
+          quantidadeBois: venda.Lote._count.bois
+        },
+        lucro: lucroCalc,
+        margemLucro: margem.toFixed(2)
+      };
+    });
 
     return NextResponse.json(vendasFormatadas, { status: 200 });
   } catch (err: any) {

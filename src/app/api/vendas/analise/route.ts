@@ -109,13 +109,17 @@ function agruparDados(
       };
     }
 
-    const lucro = venda.valor - venda.Lote.custo;
-    const margem = venda.Lote.custo > 0 ? ((lucro / venda.Lote.custo) * 100) : 0;
+  const valorNum = Number(venda.valor);
+  const loteCusto = Number(venda.Lote.custo || 0);
+  const loteGasto = Number(venda.Lote.gasto_alimentacao || 0);
+  const custoTotal = loteCusto + loteGasto;
+  const lucro = valorNum - custoTotal;
+  const margem = custoTotal > 0 ? ((lucro / custoTotal) * 100) : 0;
 
-    grupos[chave].valor += venda.valor;
-    grupos[chave].quantidade += 1;
-    grupos[chave].lucro += lucro;
-    grupos[chave].margemTotal += margem;
+  grupos[chave].valor += valorNum;
+  grupos[chave].quantidade += 1;
+  grupos[chave].lucro += lucro;
+  grupos[chave].margemTotal += margem;
     grupos[chave].count += 1;
   });
 
@@ -130,8 +134,12 @@ function agruparDados(
 
 function gerarTabelaVendas(vendas: any[], metricas: string[]): any[] {
   return vendas.map((venda: any) => {
-    const lucro = venda.valor - venda.Lote.custo;
-    const margem = venda.Lote.custo > 0 ? ((lucro / venda.Lote.custo) * 100) : 0;
+  const valorNum = Number(venda.valor);
+  const loteCusto = Number(venda.Lote.custo || 0);
+  const loteGasto = Number(venda.Lote.gasto_alimentacao || 0);
+  const custoTotal = loteCusto + loteGasto;
+  const lucro = valorNum - custoTotal;
+  const margem = custoTotal > 0 ? ((lucro / custoTotal) * 100) : 0;
 
     const linha: any = {
       id: venda.id,
@@ -173,15 +181,26 @@ function calcularResumo(vendas: any[], metricas: string[]): Record<string, any> 
   }
 
   if (metricas.includes('lucro')) {
-    const lucroTotal = vendas.reduce((acc: number, v: any) => acc + (v.valor - v.Lote.custo), 0);
+    const lucroTotal = vendas.reduce((acc: number, v: any) => {
+      const valorNum = Number(v.valor);
+      const loteCusto = Number(v.Lote.custo || 0);
+      const loteGasto = Number(v.Lote.gasto_alimentacao || 0);
+      const custoTotal = loteCusto + loteGasto;
+      const lucroItem = valorNum - custoTotal;
+      return acc + (Number.isFinite(lucroItem) ? lucroItem : 0);
+    }, 0);
     resumo.lucroTotal = lucroTotal;
     resumo.lucroMedio = totalVendas > 0 ? lucroTotal / totalVendas : 0;
   }
 
   if (metricas.includes('margem')) {
     const margens = vendas.map((v: any) => {
-      const lucro = v.valor - v.Lote.custo;
-      return v.Lote.custo > 0 ? (lucro / v.Lote.custo) * 100 : 0;
+      const valorNum = Number(v.valor);
+      const loteCusto = Number(v.Lote.custo || 0);
+      const loteGasto = Number(v.Lote.gasto_alimentacao || 0);
+      const custoTotal = loteCusto + loteGasto;
+      const lucro = valorNum - custoTotal;
+      return custoTotal > 0 ? (lucro / custoTotal) * 100 : 0;
     });
     const margemMedia = margens.length > 0 ? margens.reduce((a: number, b: number) => a + b, 0) / margens.length : 0;
     resumo.margemMedia = margemMedia;
