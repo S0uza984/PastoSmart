@@ -14,6 +14,7 @@ interface Lote {
   chegada: string;
   custo: number;
   gasto_alimentacao?: number | null;
+  data_venda?: string | null;
   vacinado: boolean;
   data_vacinacao: string | null;
   quantidadeBois?: number;
@@ -215,6 +216,15 @@ const LotePage = () => {
                     {new Date(lote.chegada).toLocaleDateString('pt-BR')}
                   </span>
                 </div>
+
+                {lote.data_venda && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Data de Saída:</span>
+                    <span className="font-bold text-gray-900">
+                      {new Date(lote.data_venda).toLocaleDateString('pt-BR')}
+                    </span>
+                  </div>
+                )}
 
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Custo Compra do Lote:</span>
