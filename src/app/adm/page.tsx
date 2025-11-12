@@ -35,7 +35,23 @@ async function fetchLotes(): Promise<LoteComEstatisticas[]> {
       return [];
     }
 
-    return await response.json();
+    // Normaliza os dados vindos da API para incluir quantidadeBois, pesoMedio e pesoTotal
+    const data = await response.json();
+    const lotes = Array.isArray(data) ? data.map((lote: any) => {
+      const quantidadeBois = Array.isArray(lote.bois) ? lote.bois.length : 0;
+      const pesoTotal = Array.isArray(lote.bois)
+        ? lote.bois.reduce((acc: number, boi: any) => acc + (Number(boi.peso) || 0), 0)
+        : 0;
+      const pesoMedio = quantidadeBois > 0 ? pesoTotal / quantidadeBois : 0;
+      return {
+        ...lote,
+        quantidadeBois,
+        pesoTotal,
+        pesoMedio
+      } as LoteComEstatisticas;
+    }) : [];
+
+    return lotes;
   } catch (error) {
     console.error('Erro ao buscar lotes:', error);
     return [];

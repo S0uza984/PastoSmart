@@ -241,24 +241,28 @@ const LotePage = () => {
                 </div>
 
                 <div className="pt-2 border-t space-y-2">
-                  <Link href={`/adm/lote/${lote.id}/adicionar-bois`}>
-                    <button className="w-full px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors flex items-center justify-center">
-                      <svg
-                        className="w-4 h-4 mr-2"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                        />
-                      </svg>
-                      Adicionar Bois
-                    </button>
-                  </Link>
+                  {!lote.data_venda ? (
+                    <Link href={`/adm/lote/${lote.id}/adicionar-bois`}>
+                      <button className="w-full px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors flex items-center justify-center">
+                        <svg
+                          className="w-4 h-4 mr-2"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                          />
+                        </svg>
+                        Adicionar Bois
+                      </button>
+                    </Link>
+                  ) : (
+                    <div className="w-full px-3 py-2 bg-gray-100 text-gray-600 rounded text-center">Vendido</div>
+                  )}
                 </div>
               </div>
             </div>

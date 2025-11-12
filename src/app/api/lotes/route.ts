@@ -25,8 +25,18 @@ export async function GET() {
       include: { bois: true },
     });
 
-    // retorna dados brutos — cálculo de nextReforco é feito no frontend
-    return NextResponse.json(lotes);
+    // Se o lote já foi vendido (data_venda), não devemos contar os bois
+    // ao retornar os dados para o frontend — isso faz com que os cards e
+    // totais reflitam corretamente a saída do rebanho.
+    const lotesParaFrontend = lotes.map((lote: any) => {
+      if (lote.data_venda) {
+        return { ...lote, bois: [] };
+      }
+      return lote;
+    });
+
+    // retorna dados ajustados — cálculo de nextReforco é feito no frontend
+    return NextResponse.json(lotesParaFrontend);
   } catch (err: any) {
     console.error("API /api/lotes GET error:", err);
     return NextResponse.json({ message: err?.message || "Erro no servidor" }, { status: 500 });
