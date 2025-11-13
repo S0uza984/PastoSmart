@@ -66,4 +66,51 @@ export async function PUT(
   }
 }
 
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const mod = await import("../../../../generated/prisma");
+    const { PrismaClient } = mod as { PrismaClient: any };
+
+    const g = globalThis as unknown as { prisma?: InstanceType<typeof PrismaClient> };
+    g.prisma = g.prisma || new PrismaClient();
+    const prisma = g.prisma;
+
+    const _params = await params;
+    const boiId = parseInt(_params.id);
+    if (isNaN(boiId)) {
+      return NextResponse.json({ message: "ID do boi inválido" }, { status: 400 });
+    }
+
+    // Buscar o boi para obter loteId (usado para mensagem)
+    const boi = await prisma.boi.findUnique({
+      where: { id: boiId }
+    });
+
+    if (!boi) {
+      return NextResponse.json({ message: "Boi não encontrado" }, { status: 404 });
+    }
+
+    // Deletar todas as pesagens (histórico de peso) deste boi
+    await prisma.pesoHistorico.deleteMany({
+      where: { boiId: boiId }
+    });
+
+    // Deletar o boi
+    const deleted = await prisma.boi.delete({
+      where: { id: boiId }
+    });
+
+    return NextResponse.json(
+      { message: 'Boi removido com sucesso', boiId: deleted.id },
+      { status: 200 }
+    );
+  } catch (err: any) {
+    console.error("API /api/bois/[id] DELETE error:", err);
+    return NextResponse.json({ message: err?.message || "Erro no servidor" }, { status: 500 });
+  }
+}
+
 

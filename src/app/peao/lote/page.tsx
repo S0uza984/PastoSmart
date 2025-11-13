@@ -26,6 +26,8 @@ const PeaoLotePage = () => {
   const [lotes, setLotes] = useState<Lote[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deletingBoiId, setDeletingBoiId] = useState<number | null>(null);
+  const [deletingFromLoteId, setDeletingFromLoteId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchLotes();
@@ -61,6 +63,26 @@ const PeaoLotePage = () => {
       setError(err instanceof Error ? err.message : 'Erro desconhecido');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteBoi = async () => {
+    if (!deletingBoiId) return;
+
+    try {
+      const response = await fetch(`/api/bois/${deletingBoiId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Erro ao remover boi');
+      }
+
+      setDeletingBoiId(null);
+      setDeletingFromLoteId(null);
+      fetchLotes();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Erro ao remover boi');
     }
   };
 
@@ -188,6 +210,62 @@ const PeaoLotePage = () => {
         </div>
       </div>
 
+      {/* Modal de Confirmação de Exclusão */}
+      {deletingFromLoteId && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Remover Boi</h3>
+            <p className="text-gray-600 mb-4">Selecione qual boi deseja remover do lote:</p>
+
+            <div className="mb-6 max-h-64 overflow-y-auto">
+              {lotes
+                .find((l) => l.id === deletingFromLoteId)
+                ?.bois?.map((boi) => (
+                  <button
+                    key={boi.id}
+                    onClick={() => setDeletingBoiId(boi.id)}
+                    className={`w-full text-left p-3 mb-2 rounded border transition-colors ${
+                      deletingBoiId === boi.id
+                        ? 'bg-red-100 border-red-600'
+                        : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                    }`}
+                  >
+                    <span className="font-semibold text-gray-900">ID: {boi.id}</span>
+                    <span className="text-gray-600 ml-2">Peso: {boi.peso} kg</span>
+                  </button>
+                ))}
+            </div>
+
+            {deletingBoiId && (
+              <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded">
+                <p className="text-red-800 text-sm">
+                  Tem certeza que deseja remover o boi <span className="font-bold">#{deletingBoiId}</span> do sistema? Esta ação não pode ser desfeita.
+                </p>
+              </div>
+            )}
+
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setDeletingFromLoteId(null);
+                  setDeletingBoiId(null);
+                }}
+                className="px-4 py-2 bg-gray-300 text-gray-900 rounded hover:bg-gray-400 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDeleteBoi}
+                disabled={!deletingBoiId}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                Confirmar Exclusão
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Cards de cada lote */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {lotes.map((lote) => {
@@ -253,8 +331,30 @@ const PeaoLotePage = () => {
                 </div>
 
                 <div className="pt-2 border-t space-y-2">
-                  <Link href={`/peao/lote/${lote.id}/adicionar-bois`}>
-                    <button className="w-full px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors flex items-center justify-center">
+                  <div className="flex gap-2">
+                    <Link href={`/peao/lote/${lote.id}/adicionar-bois`} className="flex-1">
+                      <button className="w-full px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors flex items-center justify-center">
+                        <svg
+                          className="w-4 h-4 mr-2"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                          />
+                        </svg>
+                        Adicionar
+                      </button>
+                    </Link>
+                    <button
+                      onClick={() => setDeletingFromLoteId(lote.id)}
+                      disabled={quantidadeBois === 0}
+                      className="flex-1 px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center"
+                    >
                       <svg
                         className="w-4 h-4 mr-2"
                         fill="none"
@@ -265,12 +365,12 @@ const PeaoLotePage = () => {
                           strokeLinecap="round"
                           strokeLinejoin="round"
                           strokeWidth={2}
-                          d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
                         />
                       </svg>
-                      Adicionar Bois
+                      Remover
                     </button>
-                  </Link>
+                  </div>
                 </div>
               </div>
             </div>

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, Plus, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Plus, TrendingUp, Trash2 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { TableFilter, FilterColumn } from '@/app/components/TableFilter';
 
@@ -122,6 +122,32 @@ const PesagemPage = () => {
     return dias > 0 ? (ultima - primeira) / dias : 0;
   };
 
+  const removerBoi = async () => {
+    if (!confirm('Tem certeza que deseja remover este boi do sistema? Esta ação não pode ser desfeita.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/bois/${boiId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Erro ao remover boi');
+      }
+
+      alert('Boi removido com sucesso!');
+      router.push(`/peao/lote/${loteId}`);
+    } catch (error) {
+      console.error('Erro ao remover boi:', error);
+      alert('Erro ao remover boi: ' + (error instanceof Error ? error.message : 'Erro desconhecido'));
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-6">
@@ -169,6 +195,13 @@ const PesagemPage = () => {
             <p className="text-gray-600">Lote: {boi.lote.codigo}</p>
           </div>
         </div>
+        <button
+          onClick={removerBoi}
+          className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+        >
+          <Trash2 size={20} />
+          <span>Remover Boi</span>
+        </button>
       </div>
 
       {/* Cards de Estatísticas */}
