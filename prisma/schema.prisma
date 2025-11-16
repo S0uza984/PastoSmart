@@ -13,3 +13,75 @@ datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
+
+// Usuários
+model User {
+  id       Int     @id @default(autoincrement())
+  name     String
+  email    String  @unique
+  senha    String
+  role     String
+  createdAt DateTime @default(now())
+}
+
+// Lotes
+model Lote {
+  id           Int       @id @default(autoincrement())
+  codigo       String
+  chegada      DateTime
+  custo        Float
+  gasto_alimentacao    Float?
+  data_venda   DateTime?
+  vacinado     Boolean   @default(false)
+  data_vacinacao DateTime?
+  
+  // Relações
+  bois         Boi[]
+  vendas       Venda[]
+  pesoHistorico PesoHistorico[]
+}
+
+// Bois
+model Boi {
+  id         Int       @id @default(autoincrement())
+  peso       Float
+  status     String
+  alerta     String?
+  
+  // Relações
+  loteId     Int
+  Lote       Lote      @relation(fields: [loteId], references: [id])
+  historico  PesoHistorico[]
+}
+
+// Histórico de pesos
+model PesoHistorico {
+  id        Int      @id @default(autoincrement())
+  peso      Float
+  dataPesagem DateTime @default(now())
+  
+  // Relações
+  boiId     Int
+  Boi       Boi      @relation(fields: [boiId], references: [id])
+  loteId    Int
+  Lote      Lote     @relation(fields: [loteId], references: [id])
+}
+
+// Vendas
+model Venda {
+  id       Int      @id @default(autoincrement())
+  dataVenda DateTime @default(now())
+  valor    Float
+  
+  // Relação
+  loteId   Int
+  Lote     Lote     @relation(fields: [loteId], references: [id])
+}
+
+// Configurações do Sistema
+model Configuracao {
+  id       Int      @id @default(autoincrement())
+  chave    String   @unique
+  valor    String
+  atualizadoEm DateTime @default(now()) @updatedAt
+}
