@@ -64,6 +64,39 @@ export default function AnaliseVendasPage() {
       return;
     }
 
+    // Validar datas (não podem ser futuras e data fim deve ser >= data início)
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+
+    if (filtros.dataInicio) {
+      const dataInicioObj = new Date(filtros.dataInicio);
+      dataInicioObj.setHours(0, 0, 0, 0);
+      if (dataInicioObj > hoje) {
+        setErro('A data de início não pode ser futura');
+        return;
+      }
+    }
+
+    if (filtros.dataFim) {
+      const dataFimObj = new Date(filtros.dataFim);
+      dataFimObj.setHours(0, 0, 0, 0);
+      if (dataFimObj > hoje) {
+        setErro('A data de fim não pode ser futura');
+        return;
+      }
+    }
+
+    if (filtros.dataInicio && filtros.dataFim) {
+      const dataInicioObj = new Date(filtros.dataInicio);
+      const dataFimObj = new Date(filtros.dataFim);
+      dataInicioObj.setHours(0, 0, 0, 0);
+      dataFimObj.setHours(0, 0, 0, 0);
+      if (dataInicioObj > dataFimObj) {
+        setErro('A data de início deve ser anterior ou igual à data de fim');
+        return;
+      }
+    }
+
     setCarregando(true);
     setErro(null);
 
@@ -102,6 +135,31 @@ export default function AnaliseVendasPage() {
     return titulos[metrica];
   };
 
+  // Função para formatar data sem problemas de timezone
+  const formatarData = (dataString: string): string => {
+    try {
+      if (dataString.includes('T')) {
+        const [dataPart] = dataString.split('T');
+        const [ano, mes, dia] = dataPart.split('-');
+        return `${dia}/${mes}/${ano}`;
+      }
+      if (dataString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const [ano, mes, dia] = dataString.split('-');
+        return `${dia}/${mes}/${ano}`;
+      }
+      const data = new Date(dataString);
+      if (!isNaN(data.getTime())) {
+        const dia = String(data.getDate()).padStart(2, '0');
+        const mes = String(data.getMonth() + 1).padStart(2, '0');
+        const ano = data.getFullYear();
+        return `${dia}/${mes}/${ano}`;
+      }
+      return dataString;
+    } catch {
+      return dataString;
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -124,8 +182,10 @@ export default function AnaliseVendasPage() {
               name="dataInicio"
               value={filtros.dataInicio || ''}
               onChange={handleFiltroChange}
+              max={filtros.dataFim || new Date().toISOString().split('T')[0]}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent"
             />
+            <p className="text-xs text-gray-500 mt-1">Opcional - filtra desde esta data</p>
           </div>
 
           {/* Data Fim */}
@@ -138,8 +198,11 @@ export default function AnaliseVendasPage() {
               name="dataFim"
               value={filtros.dataFim || ''}
               onChange={handleFiltroChange}
+              min={filtros.dataInicio || undefined}
+              max={new Date().toISOString().split('T')[0]}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent"
             />
+            <p className="text-xs text-gray-500 mt-1">Opcional - filtra até esta data</p>
           </div>
 
           {/* Tipo de Gráfico */}
@@ -184,13 +247,13 @@ export default function AnaliseVendasPage() {
           <p className="text-sm font-semibold text-blue-900 mb-3">📊 Selecione as Métricas para Análise:</p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {(['valor', 'quantidade', 'lucro', 'margem'] as MetricaVendas[]).map(metrica => (
-              <label key={metrica} className="flex items-center gap-3 cursor-pointer">
+              <label key={metrica} className="flex items-center gap-3 cursor-pointer p-2 rounded hover:bg-blue-100 transition-colors">
                 <input
                   type="checkbox"
                   name={metrica}
                   checked={filtros.metricas.includes(metrica)}
                   onChange={handleFiltroChange}
-                  className="w-4 h-4 rounded text-blue-600"
+                  className="w-4 h-4 rounded text-blue-600 focus:ring-2 focus:ring-blue-500"
                 />
                 <span className="text-sm font-medium text-gray-700">
                   {obterTituloMetrica(metrica)}
@@ -198,16 +261,19 @@ export default function AnaliseVendasPage() {
               </label>
             ))}
           </div>
+          {filtros.metricas.length === 0 && (
+            <p className="text-xs text-red-600 mt-2">⚠️ Selecione pelo menos uma métrica</p>
+          )}
         </div>
 
         {/* Opção de Tabela */}
-        <div className="mb-6">
+        <div className="mb-6 p-3 bg-gray-50 rounded-lg border border-gray-200">
           <label className="flex items-center gap-3 cursor-pointer">
             <input
               type="checkbox"
               checked={filtros.mostrarTabela}
               onChange={handleCheckboxTabela}
-              className="w-4 h-4 rounded text-blue-600"
+              className="w-4 h-4 rounded text-blue-600 focus:ring-2 focus:ring-blue-500"
             />
             <span className="text-sm font-medium text-gray-700">
               📋 Mostrar tabela com dados detalhados
@@ -253,9 +319,45 @@ export default function AnaliseVendasPage() {
       {/* Análise Gerada */}
       {analiseGerada && dados && (
         <div className="space-y-6">
+          {/* Informações do Filtro Aplicado */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h3 className="font-semibold text-blue-900 mb-2">🔍 Filtros Aplicados:</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 text-sm text-blue-800">
+              {filtros.dataInicio && (
+                <div>
+                  <strong className="text-blue-900">Data Início:</strong> {formatarData(filtros.dataInicio)}
+                </div>
+              )}
+              {filtros.dataFim && (
+                <div>
+                  <strong className="text-blue-900">Data Fim:</strong> {formatarData(filtros.dataFim)}
+                </div>
+              )}
+              <div>
+                <strong className="text-blue-900">Agrupado por:</strong> {
+                  filtros.agrupadoPor === 'data' ? 'Data' :
+                  filtros.agrupadoPor === 'lote' ? 'Lote' :
+                  filtros.agrupadoPor === 'mes' ? 'Mês' : 'Semana'
+                }
+              </div>
+              <div>
+                <strong className="text-blue-900">Total de registros:</strong> {dados.tabela?.length || 0}
+              </div>
+            </div>
+          </div>
+
           {/* Gráficos */}
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-6">📊 Visualização dos Dados</h2>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-2xl font-semibold text-gray-800">📊 Visualização dos Dados</h2>
+              <div className="text-sm text-gray-600">
+                <span className="font-medium">Tipo:</span> {
+                  filtros.tipoGrafico === 'linha' ? 'Linha' :
+                  filtros.tipoGrafico === 'barra' ? 'Barra' :
+                  filtros.tipoGrafico === 'area' ? 'Área' : 'Pizza'
+                }
+              </div>
+            </div>
             <GraficoVendas
               dados={dados.grafico}
               tipo={filtros.tipoGrafico}
@@ -275,24 +377,54 @@ export default function AnaliseVendasPage() {
           )}
 
           {/* Resumo Estatístico */}
-          {dados.resumo && (
+          {dados.resumo && Object.keys(dados.resumo).length > 0 && (
             <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-6">
-              <h3 className="font-semibold text-gray-800 mb-4">📈 Resumo Estatístico</h3>
+              <h3 className="text-xl font-semibold text-gray-800 mb-4">📈 Resumo Estatístico</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {Object.entries(dados.resumo).map(([chave, valor]: [string, any]) => (
-                  <div key={chave} className="bg-white rounded-lg p-4 shadow-sm border border-green-100">
-                    <p className="text-sm text-gray-600 font-medium capitalize">
-                      {chave.replace(/([A-Z])/g, ' $1').trim()}
-                    </p>
-                    <p className="text-2xl font-bold text-green-600 mt-1">
-                      {typeof valor === 'number' && chave.includes('Valor')
-                        ? `R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
-                        : typeof valor === 'number' && chave.includes('margem')
-                        ? `${valor.toFixed(2)}%`
-                        : valor}
-                    </p>
-                  </div>
-                ))}
+                {Object.entries(dados.resumo).map(([chave, valor]: [string, any]) => {
+                  const formatarValor = () => {
+                    if (typeof valor === 'number') {
+                      if (chave.toLowerCase().includes('valor') || chave.toLowerCase().includes('total')) {
+                        return `R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                      }
+                      if (chave.toLowerCase().includes('margem')) {
+                        return `${valor.toFixed(2)}%`;
+                      }
+                      if (chave.toLowerCase().includes('medio') || chave.toLowerCase().includes('media')) {
+                        if (chave.toLowerCase().includes('valor')) {
+                          return `R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                        }
+                        return valor.toFixed(2);
+                      }
+                      return valor.toLocaleString('pt-BR');
+                    }
+                    return valor;
+                  };
+
+                  const obterLabel = () => {
+                    const labels: Record<string, string> = {
+                      totalVendas: 'Total de Vendas',
+                      valorTotal: 'Valor Total',
+                      valorMedio: 'Valor Médio',
+                      quantidadeVendas: 'Quantidade',
+                      lucroTotal: 'Lucro Total',
+                      lucroMedio: 'Lucro Médio',
+                      margemMedia: 'Margem Média'
+                    };
+                    return labels[chave] || chave.replace(/([A-Z])/g, ' $1').trim();
+                  };
+
+                  return (
+                    <div key={chave} className="bg-white rounded-lg p-4 shadow-sm border border-green-100">
+                      <p className="text-sm text-gray-600 font-medium">
+                        {obterLabel()}
+                      </p>
+                      <p className="text-2xl font-bold text-green-600 mt-1">
+                        {formatarValor()}
+                      </p>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -302,8 +434,23 @@ export default function AnaliseVendasPage() {
       {/* Estado Inicial */}
       {!analiseGerada && !carregando && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-8 text-center">
-          <p className="text-blue-700 text-lg">
+          <p className="text-blue-700 text-lg font-medium mb-2">
             👈 Configure os filtros acima e clique em "Gerar Análise" para começar
+          </p>
+          <p className="text-blue-600 text-sm">
+            💡 Dica: Os filtros de data são opcionais. Se não preencher, mostrará todas as vendas.
+          </p>
+        </div>
+      )}
+
+      {/* Mensagem quando não há dados */}
+      {analiseGerada && dados && dados.tabela && dados.tabela.length === 0 && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+          <p className="text-yellow-800 font-semibold text-lg mb-2">
+            ⚠️ Nenhuma venda encontrada
+          </p>
+          <p className="text-yellow-700 text-sm">
+            Não há vendas no período selecionado. Tente ajustar os filtros de data ou verifique se há vendas registradas.
           </p>
         </div>
       )}

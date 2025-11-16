@@ -14,6 +14,28 @@ export default function AdminNovoLotePage() {
     const [dataVacinacao, setDataVacinacao] = useState('');
 
     const salvarLote = async () => {
+        // Validar datas (não podem ser futuras)
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0);
+        
+        if (dataChegada) {
+            const dataChegadaObj = new Date(dataChegada);
+            dataChegadaObj.setHours(0, 0, 0, 0);
+            if (dataChegadaObj > hoje) {
+                alert('A data de chegada não pode ser futura');
+                return;
+            }
+        }
+        
+        if (vacinadoLote && dataVacinacao) {
+            const dataVacinacaoObj = new Date(dataVacinacao);
+            dataVacinacaoObj.setHours(0, 0, 0, 0);
+            if (dataVacinacaoObj > hoje) {
+                alert('A data de vacinação não pode ser futura');
+                return;
+            }
+        }
+        
         if (nomeLote && dataChegada && custoLote && (!vacinadoLote || dataVacinacao)) {
             try {
                 const response = await fetch('/api/lotes', {
@@ -91,6 +113,7 @@ export default function AdminNovoLotePage() {
                                 type="date" 
                                 value={dataChegada}
                                 onChange={(e) => setDataChegada(e.target.value)}
+                                max={new Date().toISOString().split('T')[0]}
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500" 
                             />
                         </div>
@@ -146,6 +169,7 @@ export default function AdminNovoLotePage() {
                                     type="date" 
                                     value={dataVacinacao}
                                     onChange={(e) => setDataVacinacao(e.target.value)}
+                                    max={new Date().toISOString().split('T')[0]}
                                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500" 
                                 />
                             </div>

@@ -29,6 +29,29 @@ export async function POST(
       return NextResponse.json({ message: "Peso deve ser um número positivo" }, { status: 400 });
     }
 
+    // Validar data de pesagem (não pode ser futura)
+    let dataPesagemDate: Date;
+    if (dataPesagem) {
+      // Parse da data (formato YYYY-MM-DD)
+      const parts = dataPesagem.split('-').map(Number);
+      if (parts.length !== 3 || parts.some(isNaN)) {
+        return NextResponse.json({ message: "Data de pesagem inválida" }, { status: 400 });
+      }
+      const [y, m, d] = parts;
+      dataPesagemDate = new Date(y, m - 1, d);
+      
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0);
+      dataPesagemDate.setHours(0, 0, 0, 0);
+      
+      if (dataPesagemDate > hoje) {
+        return NextResponse.json({ message: "A data de pesagem não pode ser futura" }, { status: 400 });
+      }
+    } else {
+      dataPesagemDate = new Date();
+      dataPesagemDate.setHours(0, 0, 0, 0);
+    }
+
     // Verificar se o boi existe e buscar o loteId
     const boi = await prisma.boi.findUnique({
       where: { id: boiId },
@@ -43,7 +66,7 @@ export async function POST(
     const pesagem = await prisma.pesoHistorico.create({
       data: {
         peso: parseFloat(peso),
-        dataPesagem: dataPesagem ? new Date(dataPesagem) : new Date(),
+        dataPesagem: dataPesagemDate,
         boiId: boiId,
         loteId: boi.loteId
       }

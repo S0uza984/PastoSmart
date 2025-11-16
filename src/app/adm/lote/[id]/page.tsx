@@ -19,6 +19,7 @@ interface Lote {
   chegada: string;
   custo: number;
   gasto_alimentacao?: number | null; // <-- novo campo
+  data_venda?: string | null;
   vacinado: boolean;
   data_vacinacao: string | null;
   quantidadeBois: number;
@@ -130,6 +131,53 @@ const LoteDetailsPage = () => {
   // calcula next reforço para exibição
   const nextReforco = calcNextReforco(lote.data_vacinacao);
   const reforcoAtrasado = nextReforco ? new Date() >= nextReforco : false;
+  const isVendido = !!lote.data_venda;
+
+  // Se o lote foi vendido, mostra apenas informações de datas
+  if (isVendido) {
+    return (
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl font-bold text-gray-900">Lote {lote.codigo}</h1>
+              <span className="bg-red-600 text-white text-sm font-bold px-3 py-1 rounded">VENDIDO</span>
+            </div>
+            <p className="text-gray-600 mt-2">Lote vendido - apenas consulta de datas</p>
+          </div>
+          <Link href="/adm/lote">
+            <button className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+              Voltar para Lotes
+            </button>
+          </Link>
+        </div>
+
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6">
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">📅 Informações de Datas</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-white p-4 rounded-lg border border-gray-200">
+              <p className="text-sm text-gray-600 mb-1">Data de Chegada</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {new Date(lote.chegada).toLocaleDateString('pt-BR')}
+              </p>
+            </div>
+            <div className="bg-white p-4 rounded-lg border border-gray-200">
+              <p className="text-sm text-gray-600 mb-1">Data de Saída (Venda)</p>
+              <p className="text-2xl font-bold text-yellow-700">
+                {lote.data_venda ? new Date(lote.data_venda).toLocaleDateString('pt-BR') : '—'}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+          <p className="text-gray-600 text-center">
+            ⚠️ Este lote foi vendido. Apenas as informações de datas estão disponíveis para consulta.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
@@ -160,7 +208,9 @@ const LoteDetailsPage = () => {
         <div className="bg-white p-6 rounded-lg shadow border">
           <div className="text-center">
             <p className="text-sm font-medium text-gray-600">Peso Médio</p>
-            <p className="text-3xl font-bold text-blue-600">{lote.pesoMedio} kg</p>
+            <p className="text-2xl font-bold text-blue-600 break-words">
+              {lote.pesoMedio ? `${Number(lote.pesoMedio).toFixed(2)} kg` : '—'}
+            </p>
           </div>
         </div>
 
@@ -331,7 +381,13 @@ const LoteDetailsPage = () => {
                 <input value={editLoteForm.codigo} onChange={(e) => setEditLoteForm(v => ({ ...v, codigo: e.target.value }))} className="mt-1 w-full border rounded px-3 py-2" />
               </label>
               <label className="text-sm">Chegada
-                <input type="date" value={editLoteForm.chegada} onChange={(e) => setEditLoteForm(v => ({ ...v, chegada: e.target.value }))} className="mt-1 w-full border rounded px-3 py-2" />
+                <input 
+                  type="date" 
+                  value={editLoteForm.chegada} 
+                  onChange={(e) => setEditLoteForm(v => ({ ...v, chegada: e.target.value }))} 
+                  max={new Date().toISOString().split('T')[0]}
+                  className="mt-1 w-full border rounded px-3 py-2" 
+                />
               </label>
               <label className="text-sm">Custo
                 <input type="number" step="0.01" value={editLoteForm.custo} onChange={(e) => setEditLoteForm(v => ({ ...v, custo: e.target.value }))} className="mt-1 w-full border rounded px-3 py-2" />
@@ -356,7 +412,13 @@ const LoteDetailsPage = () => {
               </label>
               {editLoteForm.vacinado && (
                 <label className="text-sm">Data de Vacinação
-                  <input type="date" value={editLoteForm.data_vacinacao} onChange={(e) => setEditLoteForm(v => ({ ...v, data_vacinacao: e.target.value }))} className="mt-1 w-full border rounded px-3 py-2" />
+                  <input 
+                    type="date" 
+                    value={editLoteForm.data_vacinacao} 
+                    onChange={(e) => setEditLoteForm(v => ({ ...v, data_vacinacao: e.target.value }))} 
+                    max={new Date().toISOString().split('T')[0]}
+                    className="mt-1 w-full border rounded px-3 py-2" 
+                  />
                 </label>
               )}
             </div>
@@ -364,6 +426,28 @@ const LoteDetailsPage = () => {
               <button onClick={() => setIsEditingLote(false)} className="px-4 py-2 border rounded">Cancelar</button>
               <button
                 onClick={async () => {
+                  // Validar datas (não podem ser futuras)
+                  const hoje = new Date();
+                  hoje.setHours(0, 0, 0, 0);
+                  
+                  if (editLoteForm.chegada) {
+                    const dataChegadaObj = new Date(editLoteForm.chegada);
+                    dataChegadaObj.setHours(0, 0, 0, 0);
+                    if (dataChegadaObj > hoje) {
+                      alert('A data de chegada não pode ser futura');
+                      return;
+                    }
+                  }
+                  
+                  if (editLoteForm.vacinado && editLoteForm.data_vacinacao) {
+                    const dataVacinacaoObj = new Date(editLoteForm.data_vacinacao);
+                    dataVacinacaoObj.setHours(0, 0, 0, 0);
+                    if (dataVacinacaoObj > hoje) {
+                      alert('A data de vacinação não pode ser futura');
+                      return;
+                    }
+                  }
+                  
                   // prepara payload convertendo strings numéricos
                   const payload = {
                     codigo: editLoteForm.codigo,

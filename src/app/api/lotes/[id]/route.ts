@@ -97,6 +97,32 @@ export async function PUT(
     const body = await req.json();
     const { codigo, chegada, custo, vacinado, data_vacinacao, gasto_alimentacao } = body || {};
 
+    // Validar que as datas não sejam futuras
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    
+    if (typeof chegada !== 'undefined' && chegada) {
+      const chegadaDate = parseLocalDate(chegada);
+      if (chegadaDate) {
+        const chegadaCheck = new Date(chegadaDate);
+        chegadaCheck.setHours(0, 0, 0, 0);
+        if (chegadaCheck > hoje) {
+          return NextResponse.json({ message: "A data de chegada não pode ser futura" }, { status: 400 });
+        }
+      }
+    }
+    
+    if (typeof data_vacinacao !== 'undefined' && data_vacinacao) {
+      const vacinacaoDate = parseLocalDate(data_vacinacao);
+      if (vacinacaoDate) {
+        const vacinacaoCheck = new Date(vacinacaoDate);
+        vacinacaoCheck.setHours(0, 0, 0, 0);
+        if (vacinacaoCheck > hoje) {
+          return NextResponse.json({ message: "A data de vacinação não pode ser futura" }, { status: 400 });
+        }
+      }
+    }
+
     const data: any = {};
     if (typeof codigo !== 'undefined') data.codigo = codigo;
     if (typeof chegada !== 'undefined') data.chegada = chegada ? parseLocalDate(chegada) : null;

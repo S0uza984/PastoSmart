@@ -34,6 +34,46 @@ interface LoteDisponivel {
   pesoTotal: number;
 }
 
+// Função para formatar data sem problemas de timezone
+const formatarData = (dataInput: string | Date): string => {
+  try {
+    let dataStr: string;
+    
+    // Se for Date, converte para string ISO
+    if (dataInput instanceof Date) {
+      dataStr = dataInput.toISOString();
+    } else {
+      dataStr = String(dataInput);
+    }
+    
+    // Se a data vem como string ISO (com T), extrai apenas a parte da data
+    if (dataStr.includes('T')) {
+      const [dataPart] = dataStr.split('T');
+      const [ano, mes, dia] = dataPart.split('-');
+      return `${dia}/${mes}/${ano}`;
+    }
+    
+    // Se já vem no formato YYYY-MM-DD, converte
+    if (dataStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const [ano, mes, dia] = dataStr.split('-');
+      return `${dia}/${mes}/${ano}`;
+    }
+    
+    // Tenta parsear como Date e formatar
+    const data = new Date(dataStr);
+    if (!isNaN(data.getTime())) {
+      const dia = String(data.getDate()).padStart(2, '0');
+      const mes = String(data.getMonth() + 1).padStart(2, '0');
+      const ano = data.getFullYear();
+      return `${dia}/${mes}/${ano}`;
+    }
+    
+    return dataStr;
+  } catch {
+    return String(dataInput);
+  }
+};
+
 export default function VendasPage() {
   const [vendas, setVendas] = useState<VendaAPI[]>([]);
   const [lotes, setLotes] = useState<LoteDisponivel[]>([]);
@@ -46,6 +86,8 @@ export default function VendasPage() {
   const [valorVenda, setValorVenda] = useState('');
   const [registrando, setRegistrando] = useState(false);
   const [mensagem, setMensagem] = useState<{ tipo: 'sucesso' | 'erro'; texto: string } | null>(null);
+  const [pesoMedioVenda, setPesoMedioVenda] = useState<number | null>(null);
+  const [lotesProntos, setLotesProntos] = useState<LoteDisponivel[]>([]);
 
   // Buscar dados do banco
   useEffect(() => {
@@ -54,13 +96,28 @@ export default function VendasPage() {
         setCarregando(true);
         setErro(null);
 
-        // Buscar lotes
+        // Buscar lotes (filtrar apenas lotes não vendidos)
         const resLotes = await fetch('/api/lotes', { cache: 'no-store' });
         if (!resLotes.ok) throw new Error('Erro ao carregar lotes');
         const lotesData = await resLotes.json();
         
-        // Filtrar apenas lotes não vendidos
-        const lotesDisponiveis = lotesData.filter((l: any) => !l.data_venda);
+        // Filtrar apenas lotes não vendidos e calcular quantidade de bois
+        const lotesDisponiveis = lotesData
+          .filter((lote: any) => !lote.data_venda) // Apenas lotes não vendidos
+          .map((lote: any) => {
+            const quantidadeBois = Array.isArray(lote.bois) ? lote.bois.length : 0;
+            const pesoTotal = Array.isArray(lote.bois)
+              ? lote.bois.reduce((acc: number, boi: any) => acc + (boi.peso ?? 0), 0)
+              : 0;
+            const pesoMedio = quantidadeBois > 0 ? pesoTotal / quantidadeBois : 0;
+            
+            return {
+              ...lote,
+              quantidadeBois,
+              pesoTotal,
+              pesoMedio,
+            };
+          });
         setLotes(lotesDisponiveis);
 
         // Buscar vendas
@@ -68,6 +125,25 @@ export default function VendasPage() {
         if (!resVendas.ok) throw new Error('Erro ao carregar vendas');
         const vendasData = await resVendas.json();
         setVendas(vendasData);
+
+        // Buscar configuração de peso médio de venda e verificar lotes prontos
+        const resConfig = await fetch('/api/configuracoes?chave=peso_medio_venda', { cache: 'no-store' });
+        if (resConfig.ok) {
+          const configData = await resConfig.json();
+          if (configData.valor) {
+            const pesoConfig = parseFloat(configData.valor);
+            if (!isNaN(pesoConfig)) {
+              setPesoMedioVenda(pesoConfig);
+              
+              // Verificar quais lotes estão prontos para venda
+              // Usar lotesDisponiveis que já foi calculado acima
+              const lotesAptos = lotesDisponiveis.filter((lote: LoteDisponivel) => 
+                lote.pesoMedio >= pesoConfig && lote.quantidadeBois > 0
+              );
+              setLotesProntos(lotesAptos);
+            }
+          }
+        }
       } catch (err: any) {
         setErro(err.message || 'Erro ao carregar dados');
         console.error(err);
@@ -90,6 +166,19 @@ export default function VendasPage() {
     if (parseFloat(valorVenda) <= 0) {
       setMensagem({ tipo: 'erro', texto: 'Valor deve ser maior que zero' });
       return;
+    }
+
+    // Validar data de venda (não pode ser futura)
+    if (dataVenda) {
+      const dataVendaObj = new Date(dataVenda);
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0);
+      dataVendaObj.setHours(0, 0, 0, 0);
+      
+      if (dataVendaObj > hoje) {
+        setMensagem({ tipo: 'erro', texto: 'Não é possível registrar venda com data futura' });
+        return;
+      }
     }
 
     try {
@@ -162,6 +251,51 @@ export default function VendasPage() {
     <div className="space-y-6">
       <h2 className="text-3xl font-bold text-gray-800">💰 Vendas Realizadas</h2>
       
+      {/* Aviso de Lotes Prontos para Venda */}
+      {lotesProntos.length > 0 && pesoMedioVenda && (
+        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-400 rounded-lg p-6 shadow-lg">
+          <div className="flex items-start gap-4">
+            <div className="flex-shrink-0">
+              <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
+                <CheckCircle className="w-8 h-8 text-white" />
+              </div>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-xl font-bold text-green-800 mb-2">
+                🎉 Lotes Prontos para Venda!
+              </h3>
+              <p className="text-green-700 mb-3">
+                {lotesProntos.length === 1 
+                  ? '1 lote atingiu o peso médio mínimo para venda'
+                  : `${lotesProntos.length} lotes atingiram o peso médio mínimo para venda`
+                } (peso médio configurado: {pesoMedioVenda.toFixed(2)} kg)
+              </p>
+              <div className="space-y-2">
+                {lotesProntos.map((lote) => (
+                  <div key={lote.id} className="bg-white rounded-lg p-3 border border-green-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-semibold text-gray-800">{lote.codigo}</p>
+                        <p className="text-sm text-gray-600">
+                          Peso médio: <span className="font-semibold text-green-600">{lote.pesoMedio.toFixed(2)} kg</span>
+                          {' • '}
+                          {lote.quantidadeBois} bois
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <span className="inline-block bg-green-100 text-green-800 text-xs font-bold px-3 py-1 rounded-full">
+                          PRONTO
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Mensagens de Status */}
       {mensagem && (
         <div className={`flex items-center gap-3 p-4 rounded-lg ${
@@ -250,6 +384,7 @@ export default function VendasPage() {
                   type="date" 
                   value={dataVenda}
                   onChange={(e) => setDataVenda(e.target.value)}
+                  max={new Date().toISOString().split('T')[0]} // Impede selecionar data futura
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 />
                 <p className="text-xs text-gray-500 mt-1">Se vazio, usa data atual</p>
@@ -359,7 +494,7 @@ export default function VendasPage() {
                 {vendas.map((venda, idx) => (
                   <tr key={venda.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                     <td className="px-6 py-4 text-sm">
-                      {new Date(venda.dataVenda).toLocaleDateString('pt-BR')}
+                      {formatarData(venda.dataVenda)}
                     </td>
                     <td className="px-6 py-4 text-sm font-medium">
                       {venda.lote.codigo}

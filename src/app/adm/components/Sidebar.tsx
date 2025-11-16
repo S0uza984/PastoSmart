@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { Home, ShoppingCart, BarChart3, LogOut, FileText, BarChart2 } from 'lucide-react';
+import { Home, ShoppingCart, BarChart3, LogOut, FileText, BarChart2, Settings } from 'lucide-react';
 import { logout } from '../../../lib/auth';
 
 // Tipagem das Props
@@ -26,7 +26,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         { icon: ShoppingCart, label: 'Vendas', route: '/adm/vendas' },
         { icon: BarChart2, label: 'Análise Vendas', route: '/adm/vendas/analise' },
         { icon: BarChart3, label: 'Lotes', route: '/adm/lote' },
-        { icon: FileText, label: 'Relatórios', route: '/adm/relatorios' }
+        { icon: FileText, label: 'Relatórios', route: '/adm/relatorios' },
+        { icon: Settings, label: 'Configurações', route: '/adm/configuracoes' }
       ]
     : [
         { icon: Home, label: 'Início', route: '/adm' },

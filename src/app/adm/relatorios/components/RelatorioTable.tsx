@@ -198,18 +198,37 @@ export default function RelatorioTable({ tipo, dados, resumo }: RelatorioTablePr
 function formatarValor(valor: any, campo: string): string {
   if (valor === null || valor === undefined) return '-';
 
+  // Se é data - verificar PRIMEIRO antes de verificar valores monetários
+  // porque "dataVenda" contém "venda" mas é uma data, não um valor
+  if (campo.toLowerCase().includes('data')) {
+    // Se já está formatado como data (DD/MM/YYYY) ou é "Não vendido", retorna como está
+    if (String(valor).match(/^\d{2}\/\d{2}\/\d{4}$/) || String(valor) === 'Não vendido') {
+      return String(valor);
+    }
+    // Se é uma data ISO ou timestamp, formata
+    try {
+      const data = new Date(valor);
+      if (!isNaN(data.getTime())) {
+        return data.toLocaleDateString('pt-BR');
+      }
+    } catch {
+      // Se não conseguir parsear, retorna como string
+    }
+    return String(valor);
+  }
+
   // Se é percentual ou margem
   if (campo.includes('Margem') || campo.includes('margem') || String(valor).endsWith('%')) {
     return String(valor);
   }
 
-  // Se é valor monetário
+  // Se é valor monetário (mas não dataVenda que já foi tratado acima)
   if (
     campo.toLowerCase().includes('custo') ||
     campo.toLowerCase().includes('valor') ||
     campo.toLowerCase().includes('lucro') ||
     campo.toLowerCase().includes('preco') ||
-    campo.toLowerCase().includes('venda')
+    (campo.toLowerCase().includes('venda') && !campo.toLowerCase().includes('data'))
   ) {
     const num = parseFloat(String(valor));
     if (!isNaN(num)) {
@@ -226,11 +245,6 @@ function formatarValor(valor: any, campo: string): string {
     if (!isNaN(num)) {
       return `${num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg`;
     }
-  }
-
-  // Se é data
-  if (campo.toLowerCase().includes('data')) {
-    return String(valor);
   }
 
   return String(valor);

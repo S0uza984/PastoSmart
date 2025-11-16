@@ -21,6 +21,8 @@ export interface Venda {
     loteName?: string;
     dataVenda: string;
     valor: number;
+    loteCusto?: number;
+    loteGastoAlimentacao?: number;
 }
 
 async function fetchLotes(): Promise<LoteComEstatisticas[]> {
@@ -72,14 +74,16 @@ async function fetchVendas(): Promise<Venda[]> {
       include: {
         Lote: {
           select: {
-            codigo: true
+            codigo: true,
+            custo: true,
+            gasto_alimentacao: true
           }
         }
       },
       orderBy: {
         dataVenda: 'desc'
-      },
-      take: 10 // Últimas 10 vendas
+      }
+      // Removido take: 10 para calcular lucro de todas as vendas
     });
 
     return vendas.map((venda: any) => ({
@@ -88,7 +92,10 @@ async function fetchVendas(): Promise<Venda[]> {
       loteName: venda.Lote.codigo,
       dataVenda: venda.dataVenda.toISOString(),
       // garante que valor seja um number (Prisma pode retornar Decimal)
-      valor: Number(venda.valor)
+      valor: Number(venda.valor),
+      // Incluir custo e gasto_alimentacao do lote para cálculo de lucro
+      loteCusto: Number(venda.Lote.custo || 0),
+      loteGastoAlimentacao: Number(venda.Lote.gasto_alimentacao || 0)
     }));
   } catch (error) {
     console.error('Erro ao buscar vendas:', error);
@@ -101,7 +108,11 @@ export default async function AdminHomePage() {
   const lotes = await fetchLotes();
   const vendas = await fetchVendas();
 
-  const totalBois = lotes.reduce((acc, lote) => {
+  // Filtrar apenas lotes ativos (não vendidos)
+  const lotesAtivos = lotes.filter(lote => !lote.data_venda);
+
+  // Estatísticas de lotes ativos
+  const totalBois = lotesAtivos.reduce((acc, lote) => {
     const quantidade = typeof lote.quantidadeBois === 'number' ? lote.quantidadeBois : 0;
     return acc + quantidade;
   }, 0);
@@ -112,23 +123,24 @@ export default async function AdminHomePage() {
     const valor = Number.isFinite(valorNum) ? valorNum : 0;
     return acc + valor;
   }, 0);
-  // soma do gasto com alimentação (campo opcional)
-  const totalGastoAlimentacao = lotes.reduce((acc, l) => {
-    const g = typeof l.gasto_alimentacao === 'number' ? l.gasto_alimentacao : 0;
-    return acc + g;
-  }, 0);
-
-  // soma do custo de todos os lotes (agora inclui também gasto com alimentação)
-  const totalCusto = lotes.reduce((acc, l) => {
-    const c = typeof l.custo === 'number' ? l.custo : 0;
-    const g = typeof l.gasto_alimentacao === 'number' ? l.gasto_alimentacao : 0;
-    return acc + c + g;
-  }, 0);
-
-  // lucro = vendas - (custo + gasto_alimentacao)
-  const lucro = totalVendasValor - totalCusto;
   
-  const totalLotesVacinados = lotes.filter(lote => lote.vacinado).length;
+  // Calcular lucro: soma o lucro de cada venda individual
+  // Lucro = Valor da Venda - (Custo do Lote + Gasto de Alimentação)
+  const lucro = vendas.reduce((acc, v) => {
+    const valorNum = Number(v.valor) || 0;
+    const loteCusto = Number(v.loteCusto) || 0;
+    const loteGasto = Number(v.loteGastoAlimentacao) || 0;
+    const custoTotal = loteCusto + loteGasto;
+    const lucroVenda = valorNum - custoTotal;
+    
+    // Debug: verificar se os valores estão corretos
+    // console.log(`Venda ${v.id}: valor=${valorNum}, custo=${loteCusto}, gasto=${loteGasto}, custoTotal=${custoTotal}, lucro=${lucroVenda}`);
+    
+    return acc + (Number.isFinite(lucroVenda) ? lucroVenda : 0);
+  }, 0);
+  
+  // Lotes vacinados apenas entre os ativos
+  const totalLotesVacinados = lotesAtivos.filter(lote => lote.vacinado).length;
 
   return (
     <div className="space-y-6">
@@ -138,7 +150,7 @@ export default async function AdminHomePage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-green-600">
           <h3 className="text-lg font-semibold text-gray-700 mb-2">Total de Lotes</h3>
-          <p className="text-3xl font-bold text-green-600">{lotes.length}</p>
+          <p className="text-3xl font-bold text-green-600">{lotesAtivos.length}</p>
           <p className="text-sm text-gray-500 mt-1">Lotes ativos</p>
         </div>
         
@@ -163,7 +175,7 @@ export default async function AdminHomePage() {
           <h3 className="text-lg font-semibold text-gray-700 mb-2">Lotes Vacinados</h3>
           <p className="text-3xl font-bold text-purple-600">{totalLotesVacinados}</p>
           <p className="text-sm text-gray-500 mt-1">
-            {((totalLotesVacinados / Math.max(lotes.length, 1)) * 100).toFixed(1)}% do total
+            {((totalLotesVacinados / Math.max(lotesAtivos.length, 1)) * 100).toFixed(1)}% do total
           </p>
         </div>
       </div>
@@ -173,29 +185,36 @@ export default async function AdminHomePage() {
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h3 className="text-xl font-semibold text-gray-800 mb-4">Lotes Recentes</h3>
           <div className="space-y-3">
-            {lotes.map((lote) => (
-              <div key={lote.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="font-medium text-gray-800">{lote.codigo}</p>
-                  <p className="text-sm text-gray-600">
-                    {lote.quantidadeBois} bois • Chegada: {new Date(lote.chegada).toLocaleDateString('pt-BR')}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="font-semibold text-green-600">
-                    R$ {lote.custo.toLocaleString('pt-BR')}
-                  </p>
-                  <p className="text-sm text-gray-500">Custo</p>
-                </div>
-              </div>
-            ))}
+            {lotesAtivos.length > 0 ? (
+              lotesAtivos.map((lote) => {
+                const custoTotal = (lote.custo || 0) + (lote.gasto_alimentacao || 0);
+                return (
+                  <div key={lote.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <p className="font-medium text-gray-800">{lote.codigo}</p>
+                      <p className="text-sm text-gray-600">
+                        {lote.quantidadeBois} bois • Chegada: {new Date(lote.chegada).toLocaleDateString('pt-BR')}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold text-green-600">
+                        R$ {custoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
+                      <p className="text-sm text-gray-500">Custo Total</p>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <p className="text-gray-500 text-center py-4">Nenhum lote ativo</p>
+            )}
           </div>
         </div>
 
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h3 className="text-xl font-semibold text-gray-800 mb-4">Vendas Recentes</h3>
           <div className="space-y-3">
-            {vendas.map((venda) => (
+            {vendas.slice(0, 10).map((venda) => (
               <div key={venda.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                 <div>
                   <p className="font-medium text-gray-800">{venda.loteName || `Lote #${venda.loteId}`}</p>

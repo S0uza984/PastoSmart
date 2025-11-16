@@ -30,8 +30,9 @@ const CORES = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899']
 export default function GraficoVendas({ dados, tipo, metricas }: GraficoVendasProps) {
   if (!dados || dados.length === 0) {
     return (
-      <div className="text-center py-12 text-gray-500">
-        <p>Nenhum dado disponível para o gráfico</p>
+      <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
+        <p className="text-gray-500 text-lg font-medium">📊 Nenhum dado disponível para o gráfico</p>
+        <p className="text-gray-400 text-sm mt-2">Ajuste os filtros ou verifique se há vendas no período selecionado</p>
       </div>
     );
   }
@@ -40,10 +41,17 @@ export default function GraficoVendas({ dados, tipo, metricas }: GraficoVendasPr
     switch (tipo) {
       case 'linha':
         return (
-          <ResponsiveContainer width="100%" height={400}>
-            <LineChart data={dados} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
+          <ResponsiveContainer width="100%" height={450}>
+            <LineChart data={dados} margin={{ top: 10, right: 30, left: 10, bottom: 100 }}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="nome" angle={-45} textAnchor="end" height={80} />
+              <XAxis 
+                dataKey="nome" 
+                angle={-45} 
+                textAnchor="end" 
+                height={100}
+                interval={0}
+                tick={{ fontSize: 12 }}
+              />
               <YAxis />
               <Tooltip 
                 formatter={(value: any) => {
@@ -105,10 +113,17 @@ export default function GraficoVendas({ dados, tipo, metricas }: GraficoVendasPr
 
       case 'barra':
         return (
-          <ResponsiveContainer width="100%" height={400}>
-            <BarChart data={dados} margin={{ top: 5, right: 30, left: 0, bottom: 80 }}>
+          <ResponsiveContainer width="100%" height={450}>
+            <BarChart data={dados} margin={{ top: 10, right: 30, left: 10, bottom: 100 }}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="nome" angle={-45} textAnchor="end" />
+              <XAxis 
+                dataKey="nome" 
+                angle={-45} 
+                textAnchor="end" 
+                height={100}
+                interval={0}
+                tick={{ fontSize: 12 }}
+              />
               <YAxis />
               <Tooltip 
                 formatter={(value: any) => {
@@ -138,10 +153,17 @@ export default function GraficoVendas({ dados, tipo, metricas }: GraficoVendasPr
 
       case 'area':
         return (
-          <ResponsiveContainer width="100%" height={400}>
-            <AreaChart data={dados} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
+          <ResponsiveContainer width="100%" height={450}>
+            <AreaChart data={dados} margin={{ top: 10, right: 30, left: 10, bottom: 100 }}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="nome" angle={-45} textAnchor="end" height={80} />
+              <XAxis 
+                dataKey="nome" 
+                angle={-45} 
+                textAnchor="end" 
+                height={100}
+                interval={0}
+                tick={{ fontSize: 12 }}
+              />
               <YAxis />
               <Tooltip 
                 formatter={(value: any) => {

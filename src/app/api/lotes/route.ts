@@ -20,23 +20,14 @@ function parseLocalDate(iso?: string | null): Date | null {
 export async function GET() {
   try {
     const prisma = await getPrisma();
+    // Retorna todos os lotes (incluindo vendidos) para consulta de datas
     const lotes = await prisma.lote.findMany({
       orderBy: { id: "desc" },
       include: { bois: true },
     });
 
-    // Se o lote já foi vendido (data_venda), não devemos contar os bois
-    // ao retornar os dados para o frontend — isso faz com que os cards e
-    // totais reflitam corretamente a saída do rebanho.
-    const lotesParaFrontend = lotes.map((lote: any) => {
-      if (lote.data_venda) {
-        return { ...lote, bois: [] };
-      }
-      return lote;
-    });
-
-    // retorna dados ajustados — cálculo de nextReforco é feito no frontend
-    return NextResponse.json(lotesParaFrontend);
+    // retorna dados — cálculo de nextReforco é feito no frontend
+    return NextResponse.json(lotes);
   } catch (err: any) {
     console.error("API /api/lotes GET error:", err);
     return NextResponse.json({ message: err?.message || "Erro no servidor" }, { status: 500 });
@@ -55,6 +46,26 @@ export async function POST(req: NextRequest) {
 
     const chegadaDate = parseLocalDate(chegada);
     const dataVacinDate = parseLocalDate(data_vacinacao);
+
+    // Validar que as datas não sejam futuras
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    
+    if (chegadaDate) {
+      const chegadaCheck = new Date(chegadaDate);
+      chegadaCheck.setHours(0, 0, 0, 0);
+      if (chegadaCheck > hoje) {
+        return NextResponse.json({ message: "A data de chegada não pode ser futura" }, { status: 400 });
+      }
+    }
+    
+    if (vacinado && dataVacinDate) {
+      const vacinacaoCheck = new Date(dataVacinDate);
+      vacinacaoCheck.setHours(0, 0, 0, 0);
+      if (vacinacaoCheck > hoje) {
+        return NextResponse.json({ message: "A data de vacinação não pode ser futura" }, { status: 400 });
+      }
+    }
 
     const created = await prisma.lote.create({
       data: {

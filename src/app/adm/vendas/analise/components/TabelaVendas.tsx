@@ -27,8 +27,40 @@ export default function TabelaVendas({ dados, metricas }: TabelaVendasProps) {
   const colunas = Object.keys(dadosPaginados[0] || {});
   const colunasVisiveis = colunas.filter(col => !col.startsWith('_'));
 
+  // Função para formatar data sem problemas de timezone
+  const formatarData = (dataString: string): string => {
+    try {
+      if (typeof dataString === 'string') {
+        if (dataString.includes('T')) {
+          const [dataPart] = dataString.split('T');
+          const [ano, mes, dia] = dataPart.split('-');
+          return `${dia}/${mes}/${ano}`;
+        }
+        if (dataString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          const [ano, mes, dia] = dataString.split('-');
+          return `${dia}/${mes}/${ano}`;
+        }
+      }
+      const data = new Date(dataString);
+      if (!isNaN(data.getTime())) {
+        const dia = String(data.getDate()).padStart(2, '0');
+        const mes = String(data.getMonth() + 1).padStart(2, '0');
+        const ano = data.getFullYear();
+        return `${dia}/${mes}/${ano}`;
+      }
+      return String(dataString);
+    } catch {
+      return String(dataString);
+    }
+  };
+
   const formatarValor = (valor: any, coluna: string): string => {
     if (valor === null || valor === undefined) return '-';
+
+    // Se for data, formata corretamente
+    if (coluna.toLowerCase().includes('data')) {
+      return formatarData(valor);
+    }
 
     if (coluna.includes('valor') || coluna.includes('lucro')) {
       const num = parseFloat(String(valor));

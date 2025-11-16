@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+function parseLocalDate(iso?: string | null): Date | null {
+  if (!iso) return null;
+  const parts = iso.split('-').map(Number);
+  if (parts.length !== 3 || parts.some(isNaN)) return null;
+  const [y, m, d] = parts;
+  return new Date(y, m - 1, d); // cria no fuso local
+}
+
 export async function GET(req: NextRequest) {
   try {
     const mod = await import("../../../../generated/prisma");
@@ -18,23 +26,32 @@ export async function GET(req: NextRequest) {
     const metricas = (searchParams.get('metricas') || 'valor').split(',');
     const agrupadoPor = searchParams.get('agrupadoPor') || 'data';
 
-    // Monta filtros de data
+    // Monta filtros de data corretamente (usando parseLocalDate)
     const dataFilter: any = {};
-    if (dataInicio) dataFilter.gte = new Date(dataInicio);
+    if (dataInicio) {
+      const inicioDate = parseLocalDate(dataInicio);
+      if (inicioDate) {
+        inicioDate.setHours(0, 0, 0, 0);
+        dataFilter.gte = inicioDate;
+      }
+    }
     if (dataFim) {
-      const fim = new Date(dataFim);
-      fim.setHours(23, 59, 59, 999);
-      dataFilter.lte = fim;
+      const fimDate = parseLocalDate(dataFim);
+      if (fimDate) {
+        fimDate.setHours(23, 59, 59, 999);
+        dataFilter.lte = fimDate;
+      }
     }
 
-    // Busca vendas com lotes
+    // Busca vendas com lotes (incluindo gasto_alimentacao)
     const vendas = await prisma.venda.findMany({
       include: {
         Lote: {
           select: {
             id: true,
             codigo: true,
-            custo: true
+            custo: true,
+            gasto_alimentacao: true
           }
         }
       },

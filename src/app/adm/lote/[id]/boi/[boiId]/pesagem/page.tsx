@@ -73,6 +73,19 @@ const PesagemPage = () => {
       return;
     }
 
+    // Validar data de pesagem (não pode ser futura)
+    if (novaData) {
+      const dataPesagemObj = new Date(novaData);
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0);
+      dataPesagemObj.setHours(0, 0, 0, 0);
+      
+      if (dataPesagemObj > hoje) {
+        alert('A data de pesagem não pode ser futura');
+        return;
+      }
+    }
+
     try {
       setSalvando(true);
       const response = await fetch(`/api/bois/${boiId}/pesagem`, {
@@ -257,6 +270,7 @@ const PesagemPage = () => {
               type="date"
               value={novaData}
               onChange={(e) => setNovaData(e.target.value)}
+              max={new Date().toISOString().split('T')[0]}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>

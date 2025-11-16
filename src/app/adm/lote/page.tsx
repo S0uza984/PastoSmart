@@ -29,6 +29,7 @@ const LotePage = () => {
   const [error, setError] = useState<string | null>(null);
   const [deletingBoiId, setDeletingBoiId] = useState<number | null>(null);
   const [deletingFromLoteId, setDeletingFromLoteId] = useState<number | null>(null);
+  const [mostrarVendidos, setMostrarVendidos] = useState(true);
 
   useEffect(() => {
     fetchLotes();
@@ -87,9 +88,15 @@ const LotePage = () => {
     }
   };
 
-  // Totais gerais (topo)
-  const totalBois = lotes.reduce((acc, lote) => acc + (lote.quantidadeBois || 0), 0);
-  const totalVacinados = lotes.filter((l) => l.vacinado).length;
+  // Filtrar lotes baseado na preferência do usuário
+  const lotesExibidos = mostrarVendidos 
+    ? lotes 
+    : lotes.filter(lote => !lote.data_venda);
+
+  // Totais gerais (topo) - apenas lotes ativos
+  const lotesAtivos = lotes.filter(lote => !lote.data_venda);
+  const totalBois = lotesAtivos.reduce((acc, lote) => acc + (lote.quantidadeBois || 0), 0);
+  const totalVacinados = lotesAtivos.filter((l) => l.vacinado).length;
 
   if (loading) {
     return (
@@ -119,24 +126,38 @@ const LotePage = () => {
           <h1 className="text-3xl font-bold text-gray-900">Gerenciar Lotes</h1>
           <p className="text-gray-600">Visualize e gerencie os lotes de gado</p>
         </div>
-        <Link href="/adm/lote/novo-lote">
-          <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center">
-            <svg
-              className="w-4 h-4 mr-2"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-              />
-            </svg>
-            Adicionar Novo Lote
-          </button>
-        </Link>
+        <div className="flex items-center gap-3">
+          {/* Toggle para mostrar/ocultar lotes vendidos */}
+          <label className="flex items-center gap-2 cursor-pointer bg-gray-100 px-4 py-2 rounded-md hover:bg-gray-200 transition-colors">
+            <input
+              type="checkbox"
+              checked={mostrarVendidos}
+              onChange={(e) => setMostrarVendidos(e.target.checked)}
+              className="w-4 h-4 rounded text-green-600"
+            />
+            <span className="text-sm font-medium text-gray-700">
+              {mostrarVendidos ? 'Ocultar' : 'Mostrar'} Lotes Vendidos
+            </span>
+          </label>
+          <Link href="/adm/lote/novo-lote">
+            <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center">
+              <svg
+                className="w-4 h-4 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                />
+              </svg>
+              Adicionar Novo Lote
+            </button>
+          </Link>
+        </div>
       </div>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-6">
         {/* Total de Lotes */}
@@ -146,8 +167,8 @@ const LotePage = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 515.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
             <div className="ml-2">
-              <p className="text-sm font-medium text-gray-600">Total de Lotes</p>
-              <p className="text-2xl font-bold text-gray-900">{lotes.length}</p>
+              <p className="text-sm font-medium text-gray-600">Total de Lotes Ativos</p>
+              <p className="text-2xl font-bold text-gray-900">{lotesAtivos.length}</p>
             </div>
           </div>
         </div>
@@ -174,7 +195,7 @@ const LotePage = () => {
             <div className="ml-2">
               <p className="text-sm font-medium text-gray-600">Lotes Vacinados</p>
               <p className="text-2xl font-bold text-gray-900">
-                {lotes.filter(lote => lote.vacinado).length}
+                {totalVacinados}
               </p>
             </div>
           </div>
@@ -238,88 +259,113 @@ const LotePage = () => {
       )}
 
       {/* Cards dos lotes */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {lotes.map((lote) => {
+      {lotesExibidos.length === 0 && !mostrarVendidos ? (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+          <p className="text-yellow-800 font-medium">Nenhum lote ativo encontrado</p>
+        </div>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {lotesExibidos.map((lote) => {
           const quantidadeBois = lote.quantidadeBois || 0;
           const pesoMedio = lote.pesoMedio || 0;
           const gastoAlimentacao = lote.gasto_alimentacao || 0;
 
+          const isVendido = !!lote.data_venda;
+
           return (
-            <div key={lote.id} className="bg-white rounded-lg shadow border overflow-hidden">
-              <div className="bg-green-600 text-white p-4 cursor-pointer hover:bg-green-700 transition-colors">
-                <Link href={`/adm/lote/${lote.id}`}>
+            <div key={lote.id} className={`bg-white rounded-lg shadow border overflow-hidden ${isVendido ? 'opacity-75' : ''}`}>
+              <div className={`${isVendido ? 'bg-gray-500' : 'bg-green-600'} text-white p-4 ${isVendido ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-green-700'} transition-colors`}>
+                {isVendido ? (
                   <div>
-                    <h3 className="text-xl font-bold">{lote.codigo}</h3>
-                    <p className="text-green-100 text-sm">Clique para ver estatísticas</p>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xl font-bold">{lote.codigo}</h3>
+                      <span className="bg-red-600 text-white text-xs font-bold px-2 py-1 rounded">VENDIDO</span>
+                    </div>
+                    <p className="text-gray-200 text-sm mt-1">Lote vendido - apenas consulta de datas</p>
                   </div>
-                </Link>
+                ) : (
+                  <Link href={`/adm/lote/${lote.id}`}>
+                    <div>
+                      <h3 className="text-xl font-bold">{lote.codigo}</h3>
+                      <p className="text-green-100 text-sm">Clique para ver estatísticas</p>
+                    </div>
+                  </Link>
+                )}
               </div>
 
               <div className="p-4 space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Quantidade de Bois:</span>
-                  <span className="font-bold text-lg text-gray-900">{quantidadeBois}</span>
-                </div>
+                {!isVendido && (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Quantidade de Bois:</span>
+                      <span className="font-bold text-lg text-gray-900">{quantidadeBois}</span>
+                    </div>
 
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Peso Médio:</span>
-                  <span className="font-bold text-lg text-green-600">
-                    {pesoMedio > 0 ? `${pesoMedio.toFixed(1)} kg` : '—'}
-                  </span>
-                </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Peso Médio:</span>
+                      <span className="font-bold text-lg text-green-600">
+                        {pesoMedio > 0 ? `${pesoMedio.toFixed(1)} kg` : '—'}
+                      </span>
+                    </div>
 
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Vacinação:</span>
-                  <span
-                    className={`font-bold text-lg ${
-                      lote.vacinado ? 'text-green-600' : 'text-red-600'
-                    }`}
-                  >
-                    {lote.vacinado ? 'Vacinado' : 'Não vacinado'}
-                  </span>
-                </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Vacinação:</span>
+                      <span
+                        className={`font-bold text-lg ${
+                          lote.vacinado ? 'text-green-600' : 'text-red-600'
+                        }`}
+                      >
+                        {lote.vacinado ? 'Vacinado' : 'Não vacinado'}
+                      </span>
+                    </div>
 
-                {lote.vacinado && lote.data_vacinacao && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Data da Vacinação:</span>
-                    <span className="font-bold text-gray-900">
-                      {new Date(lote.data_vacinacao).toLocaleDateString('pt-BR')}
-                    </span>
-                  </div>
+                    {lote.vacinado && lote.data_vacinacao && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Data da Vacinação:</span>
+                        <span className="font-bold text-gray-900">
+                          {new Date(lote.data_vacinacao).toLocaleDateString('pt-BR')}
+                        </span>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Data de Chegada:</span>
+                  <span className="text-gray-600">📅 Data de Chegada:</span>
                   <span className="font-bold text-gray-900">
                     {new Date(lote.chegada).toLocaleDateString('pt-BR')}
                   </span>
                 </div>
 
                 {lote.data_venda && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Data de Saída:</span>
-                    <span className="font-bold text-gray-900">
+                  <div className="flex justify-between items-center bg-yellow-50 p-2 rounded border border-yellow-200">
+                    <span className="text-gray-700 font-medium">🚪 Data de Saída:</span>
+                    <span className="font-bold text-yellow-700">
                       {new Date(lote.data_venda).toLocaleDateString('pt-BR')}
                     </span>
                   </div>
                 )}
 
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Custo Compra do Lote:</span>
-                  <span className="font-bold text-lg text-green-600">
-                    R$ {lote.custo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </span>
-                </div>
+                {!isVendido && (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Custo Compra do Lote:</span>
+                      <span className="font-bold text-lg text-green-600">
+                        R$ {lote.custo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
 
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Gasto Alimentação:</span>
-                  <span className="font-bold text-lg text-blue-600">
-                    R$ {gastoAlimentacao.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </span>
-                </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Gasto Alimentação:</span>
+                      <span className="font-bold text-lg text-blue-600">
+                        R$ {gastoAlimentacao.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  </>
+                )}
 
                 <div className="pt-2 border-t space-y-2">
-                  {!lote.data_venda ? (
+                  {!isVendido ? (
                     <div className="flex gap-2">
                       <Link href={`/adm/lote/${lote.id}/adicionar-bois`} className="flex-1">
                         <button className="w-full px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors flex items-center justify-center">
@@ -361,14 +407,17 @@ const LotePage = () => {
                       </button>
                     </div>
                   ) : (
-                    <div className="w-full px-3 py-2 bg-gray-100 text-gray-600 rounded text-center">Vendido</div>
+                    <div className="w-full px-3 py-2 bg-gray-200 text-gray-700 rounded text-center font-medium">
+                      ⚠️ Lote vendido - apenas consulta de datas
+                    </div>
                   )}
                 </div>
               </div>
             </div>
           );
         })}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
