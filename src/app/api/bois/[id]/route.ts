@@ -1,5 +1,19 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { jwtVerify } from "jose";
+
+async function getUserIdFromToken(req: NextRequest): Promise<number | null> {
+  try {
+    const token = req.cookies.get("auth_token")?.value;
+    if (!token) return null;
+    
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+    const { payload } = await jwtVerify(token, secret);
+    return payload.id as number;
+  } catch {
+    return null;
+  }
+}
 
 export async function PUT(
   req: NextRequest,
@@ -22,6 +36,16 @@ export async function PUT(
     const body = await req.json();
     const { peso, status, alerta, anotacoes } = body || {};
 
+    // Buscar o boi atual para comparar
+    const boiAtual = await prisma.boi.findUnique({
+      where: { id: boiId },
+      include: { Lote: true }
+    });
+
+    if (!boiAtual) {
+      return NextResponse.json({ message: "Boi não encontrado" }, { status: 404 });
+    }
+
     const data: any = {};
     if (typeof peso !== 'undefined') data.peso = parseFloat(peso);
     if (typeof status !== 'undefined') data.status = status;
@@ -30,8 +54,53 @@ export async function PUT(
 
     const updated = await prisma.boi.update({
       where: { id: boiId },
-      data
+      data,
+      include: { Lote: true }
     });
+
+    // Se um peão criou/atualizou um alerta ou anotação, enviar notificação para todos os admins
+    const userId = await getUserIdFromToken(req);
+    if (userId) {
+      const usuario = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { role: true }
+      });
+
+      // Verificar se é um peão e se criou/atualizou alerta ou anotação
+      const tinhaAlerta = boiAtual.alerta;
+      const tinhaAnotacao = boiAtual.anotacoes;
+      const temAlertaAgora = updated.alerta;
+      const temAnotacaoAgora = updated.anotacoes;
+
+      if (usuario?.role === 'peao' && (temAlertaAgora || temAnotacaoAgora) && (!tinhaAlerta && !tinhaAnotacao)) {
+        // Buscar informações completas do usuário
+        const usuarioCompleto = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { name: true }
+        });
+
+        // Buscar todos os administradores
+        const admins = await prisma.user.findMany({
+          where: { role: 'admin' },
+          select: { id: true }
+        });
+
+        // Enviar notificação para cada admin
+        for (const admin of admins) {
+          await prisma.notificacao.create({
+            data: {
+              titulo: `Alerta em Animal - Lote ${updated.Lote.codigo}`,
+              mensagem: `O peão ${usuarioCompleto?.name || 'um peão'} criou um alerta/anotação no Boi #${boiId} do Lote ${updated.Lote.codigo}. ${temAlertaAgora ? `Alerta: ${temAlertaAgora}` : ''} ${temAnotacaoAgora ? `Anotação: ${temAnotacaoAgora.substring(0, 100)}${temAnotacaoAgora.length > 100 ? '...' : ''}` : ''}`,
+              tipo: 'alerta_animal',
+              remetenteId: userId,
+              destinatarioId: admin.id,
+              loteId: updated.Lote.id,
+              boiId: boiId
+            }
+          });
+        }
+      }
+    }
 
     // Se peso foi atualizado, sincroniza a última entrada de histórico de peso
     if (Object.prototype.hasOwnProperty.call(data, 'peso')) {

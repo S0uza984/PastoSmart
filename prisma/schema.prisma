@@ -22,6 +22,10 @@ model User {
   senha    String
   role     String
   createdAt DateTime @default(now())
+  
+  // Relações de notificações
+  notificacoesEnviadas Notificacao[] @relation("NotificacoesEnviadas")
+  notificacoesRecebidas Notificacao[] @relation("NotificacoesRecebidas")
 }
 
 // Lotes
@@ -39,6 +43,7 @@ model Lote {
   bois         Boi[]
   vendas       Venda[]
   pesoHistorico PesoHistorico[]
+  notificacoes Notificacao[]
 }
 
 // Bois
@@ -53,6 +58,7 @@ model Boi {
   loteId     Int
   Lote       Lote      @relation(fields: [loteId], references: [id])
   historico  PesoHistorico[]
+  notificacoes Notificacao[]
 }
 
 // Histórico de pesos
@@ -85,4 +91,27 @@ model Configuracao {
   chave    String   @unique
   valor    String
   atualizadoEm DateTime @default(now()) @updatedAt
+}
+
+// Notificações
+model Notificacao {
+  id          Int      @id @default(autoincrement())
+  titulo      String
+  mensagem    String
+  lida        Boolean  @default(false)
+  tipo        String   // 'alerta_animal', 'mensagem', 'sistema'
+  remetenteId Int
+  destinatarioId Int
+  loteId      Int?
+  boiId       Int?
+  respostaDeId Int?   // ID da notificação que esta é uma resposta
+  createdAt   DateTime @default(now())
+  
+  // Relações
+  remetente   User     @relation("NotificacoesEnviadas", fields: [remetenteId], references: [id])
+  destinatario User    @relation("NotificacoesRecebidas", fields: [destinatarioId], references: [id])
+  lote        Lote?    @relation(fields: [loteId], references: [id])
+  boi         Boi?      @relation(fields: [boiId], references: [id])
+  respostaDe  Notificacao? @relation("RespostasNotificacao", fields: [respostaDeId], references: [id])
+  respostas   Notificacao[] @relation("RespostasNotificacao")
 }

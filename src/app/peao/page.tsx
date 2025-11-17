@@ -13,6 +13,7 @@ interface Lote {
   id: number;
   codigo: string;
   vacinado: boolean;
+  data_venda?: string | null;
   bois?: Boi[];
   quantidadeBois?: number;
   pesoMedio?: number;
@@ -46,13 +47,16 @@ const PeaoPage = () => {
       const lotes: Lote[] = await response.json();
       console.log("Lotes recebidos:", lotes);
 
-      // total de lotes
-      const totalLotes = lotes.length;
+      // Filtrar apenas lotes ativos (não vendidos)
+      const lotesAtivos = lotes.filter(lote => !lote.data_venda);
 
-      // total de bois (somando bois[] ou quantidadeBois)
+      // total de lotes (apenas ativos)
+      const totalLotes = lotesAtivos.length;
+
+      // total de bois (somando bois[] ou quantidadeBois) - apenas de lotes ativos
       let totalBois = 0;
       let somaPesos = 0;
-      lotes.forEach((lote) => {
+      lotesAtivos.forEach((lote) => {
         if (Array.isArray(lote.bois) && lote.bois.length > 0) {
           lote.bois.forEach((boi) => {
             if (typeof boi.peso === "number" && !isNaN(boi.peso)) {
@@ -70,7 +74,7 @@ const PeaoPage = () => {
       const pesoMedioGeral =
         totalBois > 0 ? somaPesos / totalBois : 0;
 
-      const lotesVacinados = lotes.filter((l) => l.vacinado).length;
+      const lotesVacinados = lotesAtivos.filter((l) => l.vacinado).length;
 
       setEstatisticas({
         totalLotes,
