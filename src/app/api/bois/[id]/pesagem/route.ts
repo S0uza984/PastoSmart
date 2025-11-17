@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+function parseLocalDate(iso?: string | null): Date | null {
+  if (!iso) return null;
+  const parts = iso.split('-').map(Number);
+  if (parts.length !== 3 || parts.some(isNaN)) return null;
+  const [y, m, d] = parts;
+  return new Date(y, m - 1, d);
+}
+
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -32,13 +40,11 @@ export async function POST(
     // Validar data de pesagem (não pode ser futura)
     let dataPesagemDate: Date;
     if (dataPesagem) {
-      // Parse da data (formato YYYY-MM-DD)
-      const parts = dataPesagem.split('-').map(Number);
-      if (parts.length !== 3 || parts.some(isNaN)) {
+      const parsedDate = parseLocalDate(dataPesagem);
+      if (!parsedDate) {
         return NextResponse.json({ message: "Data de pesagem inválida" }, { status: 400 });
       }
-      const [y, m, d] = parts;
-      dataPesagemDate = new Date(y, m - 1, d);
+      dataPesagemDate = parsedDate;
       
       const hoje = new Date();
       hoje.setHours(0, 0, 0, 0);
@@ -47,9 +53,22 @@ export async function POST(
       if (dataPesagemDate > hoje) {
         return NextResponse.json({ message: "A data de pesagem não pode ser futura" }, { status: 400 });
       }
+      
+      // Garantir que a data seja salva corretamente no banco
+      // Criar uma nova data UTC com os mesmos valores de ano, mês e dia
+      // Isso evita problemas de timezone ao salvar
+      const year = dataPesagemDate.getFullYear();
+      const month = dataPesagemDate.getMonth();
+      const day = dataPesagemDate.getDate();
+      // Criar como UTC para garantir consistência
+      dataPesagemDate = new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
     } else {
-      dataPesagemDate = new Date();
-      dataPesagemDate.setHours(0, 0, 0, 0);
+      // Se não foi fornecida, usa a data de hoje no timezone local
+      const hoje = new Date();
+      const year = hoje.getFullYear();
+      const month = hoje.getMonth();
+      const day = hoje.getDate();
+      dataPesagemDate = new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
     }
 
     // Verificar se o boi existe e buscar o loteId
@@ -160,12 +179,24 @@ export async function GET(
       return NextResponse.json({ message: "Boi não encontrado" }, { status: 404 });
     }
 
+    // Formatar datas corretamente para evitar problemas de timezone
+    // Como salvamos como UTC, precisamos usar métodos UTC para extrair
+    const formatarDataParaISO = (date: Date) => {
+      const d = new Date(date);
+      // Usar UTC para extrair a data que foi salva como UTC
+      const year = d.getUTCFullYear();
+      const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(d.getUTCDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
     return NextResponse.json({
       boi: {
         id: boi.id,
         peso: boi.peso,
         status: boi.status,
         alerta: boi.alerta,
+        anotacoes: boi.anotacoes,
         lote: {
           id: boi.Lote.id,
           codigo: boi.Lote.codigo
@@ -174,7 +205,7 @@ export async function GET(
       historico: historico.map((p: any) => ({
         id: p.id,
         peso: p.peso,
-        dataPesagem: p.dataPesagem
+        dataPesagem: formatarDataParaISO(p.dataPesagem)
       }))
     }, { status: 200, headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } });
   } catch (err: any) {

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { 
@@ -8,13 +8,62 @@ import {
   Users, 
   BarChart3, 
   LogOut,
-  User
+  User,
+  Bell
 } from 'lucide-react';
 import { logout } from '../../../lib/auth';
 
 const Sidebar = () => {
   const pathname = usePathname();
   const router = useRouter();
+  const [naoLidas, setNaoLidas] = useState(0);
+  const [nomeUsuario, setNomeUsuario] = useState<string>('Peão');
+
+  useEffect(() => {
+    fetchNaoLidas();
+    fetchUsuarioAtual();
+    const interval = setInterval(fetchNaoLidas, 30000); // Atualiza a cada 30 segundos
+    
+    // Escutar evento de atualização de notificações
+    const handleNotificacoesAtualizadas = (event: CustomEvent) => {
+      setNaoLidas(event.detail.naoLidas || 0);
+    };
+    
+    window.addEventListener('notificacoesAtualizadas', handleNotificacoesAtualizadas as EventListener);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('notificacoesAtualizadas', handleNotificacoesAtualizadas as EventListener);
+    };
+  }, []);
+
+  const fetchUsuarioAtual = async () => {
+    try {
+      const response = await fetch('/api/usuario/atual');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.name) {
+          // Pegar apenas o primeiro nome
+          const primeiroNome = data.name.split(' ')[0];
+          setNomeUsuario(primeiroNome);
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao buscar usuário:', error);
+    }
+  };
+
+  const fetchNaoLidas = async () => {
+    try {
+      const response = await fetch('/api/notificacoes?apenasNaoLidas=true');
+      if (response.ok) {
+        const data = await response.json();
+        setNaoLidas(data.naoLidas || 0);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar notificações:', error);
+    }
+  };
 
   const menuItems = [
     {
@@ -26,6 +75,12 @@ const Sidebar = () => {
       name: 'Gerenciar Lotes',
       href: '/peao/lote',
       icon: Users,
+    },
+    {
+      name: 'Notificações',
+      href: '/peao/notificacoes',
+      icon: Bell,
+      badge: naoLidas,
     },
   ];
 
@@ -41,7 +96,7 @@ const Sidebar = () => {
         </div>
         <div>
           <h1 className="text-xl font-bold">PastoSmart</h1>
-          <p className="text-sm text-gray-300">Peão</p>
+          <p className="text-sm text-gray-300">{nomeUsuario}</p>
         </div>
       </div>
 
@@ -54,14 +109,21 @@ const Sidebar = () => {
             <Link
               key={item.name}
               href={item.href}
-              className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
+              className={`flex items-center justify-between px-4 py-3 rounded-lg transition-colors ${
                 isActive
                   ? 'bg-green-600 text-white'
                   : 'text-gray-300 hover:bg-green-700 hover:text-white'
               }`}
             >
-              <Icon className="h-5 w-5 mr-3" />
-              {item.name}
+              <div className="flex items-center">
+                <Icon className="h-5 w-5 mr-3" />
+                {item.name}
+              </div>
+              {item.badge && item.badge > 0 && (
+                <span className="bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full min-w-[20px] text-center">
+                  {item.badge}
+                </span>
+              )}
             </Link>
           );
         })}
