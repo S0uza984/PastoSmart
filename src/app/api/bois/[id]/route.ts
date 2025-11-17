@@ -20,12 +20,13 @@ export async function PUT(
     }
 
     const body = await req.json();
-    const { peso, status, alerta } = body || {};
+    const { peso, status, alerta, anotacoes } = body || {};
 
     const data: any = {};
     if (typeof peso !== 'undefined') data.peso = parseFloat(peso);
     if (typeof status !== 'undefined') data.status = status;
     if (typeof alerta !== 'undefined') data.alerta = alerta ?? null;
+    if (typeof anotacoes !== 'undefined') data.anotacoes = anotacoes ?? null;
 
     const updated = await prisma.boi.update({
       where: { id: boiId },

@@ -66,11 +66,12 @@ export async function GET(
       quantidadeBois: lote._count?.bois ?? lote.bois.length,
       pesoMedio: pesoMedio,
       pesoTotal: pesoTotal,
-      bois: lote.bois.map((boi: { id: number; peso: number; status: string; alerta: string | null }) => ({
+      bois: lote.bois.map((boi: { id: number; peso: number; status: string; alerta: string | null; anotacoes: string | null }) => ({
         id: boi.id,
         peso: boi.peso,
         status: boi.status,
-        alerta: boi.alerta
+        alerta: boi.alerta,
+        anotacoes: boi.anotacoes
       }))
     };
 

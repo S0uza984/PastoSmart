@@ -224,11 +224,24 @@ const PesagemPage = () => {
         <div className="bg-white p-6 rounded-lg shadow border mb-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Gráfico de Evolução de Peso</h3>
           <ResponsiveContainer width="100%" height={400}>
-            <LineChart data={historico.map((p, index) => ({
-              data: new Date(p.dataPesagem).toLocaleDateString('pt-BR'),
-              peso: p.peso,
-              index: index + 1
-            }))}>
+            <LineChart data={historico.map((p, index) => {
+              // Formatar data corretamente para evitar problemas de timezone
+              const formatarData = (dataStr: string) => {
+                // Se já está no formato YYYY-MM-DD, usar diretamente
+                if (dataStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                  const [y, m, d] = dataStr.split('-').map(Number);
+                  return `${d.toString().padStart(2, '0')}/${m.toString().padStart(2, '0')}/${y}`;
+                }
+                // Caso contrário, tentar parsear como Date
+                const d = new Date(dataStr);
+                return d.toLocaleDateString('pt-BR');
+              };
+              return {
+                data: formatarData(p.dataPesagem),
+                peso: p.peso,
+                index: index + 1
+              };
+            })}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="data" />
               <YAxis />
@@ -319,7 +332,14 @@ const PesagemPage = () => {
                       <tr key={pesagem.id} className="bg-white border-b hover:bg-gray-50">
                         <td className="px-6 py-4 font-medium text-gray-900">{originalIndex >= 0 ? originalIndex + 1 : index + 1}</td>
                         <td className="px-6 py-4">
-                          {new Date(pesagem.dataPesagem).toLocaleDateString('pt-BR')}
+                          {(() => {
+                            // Formatar data corretamente para evitar problemas de timezone
+                            if (pesagem.dataPesagem.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                              const [y, m, d] = pesagem.dataPesagem.split('-').map(Number);
+                              return `${d.toString().padStart(2, '0')}/${m.toString().padStart(2, '0')}/${y}`;
+                            }
+                            return new Date(pesagem.dataPesagem).toLocaleDateString('pt-BR');
+                          })()}
                         </td>
                         <td className="px-6 py-4 font-semibold">{pesagem.peso} kg</td>
                         <td className="px-6 py-4">

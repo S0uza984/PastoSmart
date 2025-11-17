@@ -13,6 +13,7 @@ interface Boi {
   peso: number;
   status: string;
   alerta: string | null;
+  anotacoes: string | null;
 }
 
 interface Lote {
@@ -38,6 +39,9 @@ const PeaoLoteDetailsPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [filteredBois, setFilteredBois] = useState<Boi[]>([]);
   const [deletingBoiId, setDeletingBoiId] = useState<number | null>(null);
+  const [editingBoiId, setEditingBoiId] = useState<number | null>(null);
+  const [editBoiForm, setEditBoiForm] = useState({ peso: '', status: '', alerta: '', anotacoes: '' });
+  const [viewingAlertaBoiId, setViewingAlertaBoiId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchLote();
@@ -276,11 +280,22 @@ const PeaoLoteDetailsPage = () => {
                     <td className="px-6 py-4">Boi {originalIndex >= 0 ? originalIndex + 1 : index + 1}</td>
                     <td className="px-6 py-4 font-semibold">{boi.peso} kg</td>
                     <td className="px-6 py-4">
-                      <span className={boi.status === 'Ativo'
-                        ? 'bg-green-100 text-green-800 border border-green-300 px-2 py-1 rounded text-xs'
-                        : 'bg-yellow-100 text-yellow-800 border border-yellow-300 px-2 py-1 rounded text-xs'}>
-                        {boi.status}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className={boi.status === 'Ativo'
+                          ? 'bg-green-100 text-green-800 border border-green-300 px-2 py-1 rounded text-xs'
+                          : 'bg-yellow-100 text-yellow-800 border border-yellow-300 px-2 py-1 rounded text-xs'}>
+                          {boi.status}
+                        </span>
+                        {(boi.alerta || boi.anotacoes) && (
+                          <button
+                            onClick={() => setViewingAlertaBoiId(boi.id)}
+                            className="bg-red-100 text-red-800 border border-red-300 px-2 py-1 rounded text-xs font-semibold hover:bg-red-200 cursor-pointer transition-colors"
+                            title="Clique para ver alerta e observações"
+                          >
+                            ⚠️ Alerta
+                          </button>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -289,6 +304,20 @@ const PeaoLoteDetailsPage = () => {
                             Ver Evolução
                           </button>
                         </Link>
+                        <button
+                          onClick={() => {
+                            setEditingBoiId(boi.id);
+                            setEditBoiForm({ 
+                              peso: String(boi.peso), 
+                              status: boi.status, 
+                              alerta: boi.alerta || '',
+                              anotacoes: boi.anotacoes || ''
+                            });
+                          }}
+                          className="text-amber-600 hover:text-amber-800 text-sm font-medium"
+                        >
+                          Editar
+                        </button>
                         <button
                           onClick={() => setDeletingBoiId(boi.id)}
                           className="text-red-600 hover:text-red-800 text-sm font-medium"
@@ -304,6 +333,71 @@ const PeaoLoteDetailsPage = () => {
           </table>
         </div>
       </div>
+
+      {editingBoiId && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="p-4 border-b font-semibold text-lg">Editar Boi #{editingBoiId}</div>
+            <div className="p-4 grid grid-cols-1 gap-4">
+              <label className="text-sm font-medium">Peso (kg)
+                <input 
+                  type="number" 
+                  step="0.01" 
+                  value={editBoiForm.peso} 
+                  onChange={(e) => setEditBoiForm(v => ({ ...v, peso: e.target.value }))} 
+                  className="mt-1 w-full border rounded px-3 py-2" 
+                />
+              </label>
+              <label className="text-sm font-medium">Status
+                <select 
+                  value={editBoiForm.status} 
+                  onChange={(e) => setEditBoiForm(v => ({ ...v, status: e.target.value }))} 
+                  className="mt-1 w-full border rounded px-3 py-2"
+                >
+                  <option value="Ativo">Ativo</option>
+                  <option value="Inativo">Inativo</option>
+                  <option value="Vendido">Vendido</option>
+                </select>
+              </label>
+              <label className="text-sm font-medium">Alerta
+                <input 
+                  value={editBoiForm.alerta} 
+                  onChange={(e) => setEditBoiForm(v => ({ ...v, alerta: e.target.value }))} 
+                  className="mt-1 w-full border rounded px-3 py-2" 
+                  placeholder="Ex: Animal com sintomas de doença"
+                />
+              </label>
+              <label className="text-sm font-medium">Anotações/Observações
+                <textarea 
+                  value={editBoiForm.anotacoes} 
+                  onChange={(e) => setEditBoiForm(v => ({ ...v, anotacoes: e.target.value }))} 
+                  className="mt-1 w-full border rounded px-3 py-2 min-h-[120px] resize-y" 
+                  placeholder="Descreva observações sobre o animal, comportamento, condições de saúde, etc."
+                />
+              </label>
+            </div>
+            <div className="p-4 border-t flex justify-end gap-3">
+              <button onClick={() => setEditingBoiId(null)} className="px-4 py-2 border rounded hover:bg-gray-50">Cancelar</button>
+              <button
+                onClick={async () => {
+                  const res = await fetch(`/api/bois/${editingBoiId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(editBoiForm)
+                  });
+                  if (res.ok) {
+                    setEditingBoiId(null);
+                    await fetchLote();
+                  } else {
+                    alert('Falha ao atualizar boi');
+                  }
+                }}
+                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+              >Salvar</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {deletingBoiId && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4">
@@ -346,6 +440,75 @@ const PeaoLoteDetailsPage = () => {
           </button>
         </Link>
       </div>
+
+      {viewingAlertaBoiId && (() => {
+        const boiComAlerta = lote.bois.find(b => b.id === viewingAlertaBoiId);
+        if (!boiComAlerta) return null;
+        return (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50" onClick={() => setViewingAlertaBoiId(null)}>
+            <div className="bg-white rounded-lg shadow w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
+              <div className="p-4 border-b font-semibold text-lg flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <span className="text-red-600">⚠️</span>
+                  <span>Alerta - Boi #{viewingAlertaBoiId}</span>
+                </span>
+                <button
+                  onClick={() => setViewingAlertaBoiId(null)}
+                  className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+                >
+                  ×
+                </button>
+              </div>
+              <div className="p-6 space-y-4">
+                {boiComAlerta.alerta && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 block mb-2">Alerta</label>
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-gray-900">
+                      {boiComAlerta.alerta}
+                    </div>
+                  </div>
+                )}
+                {boiComAlerta.anotacoes && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 block mb-2">Anotações/Observações</label>
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-gray-900 whitespace-pre-wrap">
+                      {boiComAlerta.anotacoes}
+                    </div>
+                  </div>
+                )}
+                {!boiComAlerta.alerta && !boiComAlerta.anotacoes && (
+                  <div className="text-center text-gray-500 py-4">
+                    Nenhum alerta ou anotação disponível.
+                  </div>
+                )}
+              </div>
+              <div className="p-4 border-t flex justify-end gap-3">
+                <button
+                  onClick={() => {
+                    setViewingAlertaBoiId(null);
+                    setEditingBoiId(viewingAlertaBoiId);
+                    setEditBoiForm({ 
+                      peso: String(boiComAlerta.peso), 
+                      status: boiComAlerta.status, 
+                      alerta: boiComAlerta.alerta || '',
+                      anotacoes: boiComAlerta.anotacoes || ''
+                    });
+                  }}
+                  className="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700"
+                >
+                  Editar
+                </button>
+                <button
+                  onClick={() => setViewingAlertaBoiId(null)}
+                  className="px-4 py-2 border rounded hover:bg-gray-50"
+                >
+                  Fechar
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };

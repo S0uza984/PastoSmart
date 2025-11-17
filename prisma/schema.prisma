@@ -47,6 +47,7 @@ model Boi {
   peso       Float
   status     String
   alerta     String?
+  anotacoes  String?
   
   // Relações
   loteId     Int
