@@ -236,7 +236,12 @@ export default function PastoSmartAuth() {
                 {isLogin ? (
                   <>
                     <p className="text-black mb-2">Esqueceu sua senha?</p>
-                    <button className="text-blue-600 hover:text-blue-700 font-semibold">Clique aqui</button>
+                    <button
+                      onClick={() => router.push("/recuperar-senha")}
+                      className="text-blue-600 hover:text-blue-700 font-semibold underline"
+                    >
+                      Clique aqui
+                    </button>
 
                     <div className="mt-6 pt-6 border-t border-gray-200">
                       <p className="text-black mb-2">Ainda não tem uma conta?</p>

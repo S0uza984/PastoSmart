@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
   output   = "../src/generated/prisma"
@@ -14,104 +8,99 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Usuários
 model User {
-  id       Int     @id @default(autoincrement())
-  name     String
-  email    String  @unique
-  senha    String
-  role     String
-  createdAt DateTime @default(now())
-  
-  // Relações de notificações
-  notificacoesEnviadas Notificacao[] @relation("NotificacoesEnviadas")
+  id                    Int           @id @default(autoincrement())
+  name                  String
+  email                 String        @unique
+  senha                 String
+  role                  String
+  resetToken            String?
+  createdAt             DateTime      @default(now())
   notificacoesRecebidas Notificacao[] @relation("NotificacoesRecebidas")
+  notificacoesEnviadas  Notificacao[] @relation("NotificacoesEnviadas")
 }
 
-// Lotes
 model Lote {
-  id           Int       @id @default(autoincrement())
-  codigo       String
-  chegada      DateTime
-  custo        Float
-  gasto_alimentacao    Float?
-  data_venda   DateTime?
-  vacinado     Boolean   @default(false)
-  data_vacinacao DateTime?
-  
-  // Relações
-  bois         Boi[]
-  vendas       Venda[]
-  pesoHistorico PesoHistorico[]
-  notificacoes Notificacao[]
+  id                Int             @id @default(autoincrement())
+  codigo            String
+  chegada           DateTime
+  custo             Float
+  gasto_alimentacao Float?
+  data_venda        DateTime?
+  vacinado          Boolean         @default(false)
+  data_vacinacao    DateTime?
+  bois              Boi[]
+  notificacoes      Notificacao[]
+  pesoHistorico     PesoHistorico[]
+  vendas            Venda[]
 }
 
-// Bois
 model Boi {
-  id         Int       @id @default(autoincrement())
-  peso       Float
-  status     String
-  alerta     String?
-  anotacoes  String?
-  
-  // Relações
-  loteId     Int
-  Lote       Lote      @relation(fields: [loteId], references: [id])
-  historico  PesoHistorico[]
+  id           Int             @id @default(autoincrement())
+  peso         Float
+  status       String
+  alerta       String?
+  anotacoes    String?
+  loteId       Int
+  Lote         Lote            @relation(fields: [loteId], references: [id])
   notificacoes Notificacao[]
+  historico    PesoHistorico[]
+
+  @@index([loteId], map: "Boi_loteId_fkey")
 }
 
-// Histórico de pesos
 model PesoHistorico {
-  id        Int      @id @default(autoincrement())
-  peso      Float
+  id          Int      @id @default(autoincrement())
+  peso        Float
   dataPesagem DateTime @default(now())
-  
-  // Relações
-  boiId     Int
-  Boi       Boi      @relation(fields: [boiId], references: [id])
+  boiId       Int
+  loteId      Int
+  Boi         Boi      @relation(fields: [boiId], references: [id])
+  Lote        Lote     @relation(fields: [loteId], references: [id])
+
+  @@index([boiId], map: "PesoHistorico_boiId_fkey")
+  @@index([loteId], map: "PesoHistorico_loteId_fkey")
+}
+
+model Venda {
+  id        Int      @id @default(autoincrement())
+  dataVenda DateTime @default(now())
+  valor     Float
   loteId    Int
   Lote      Lote     @relation(fields: [loteId], references: [id])
+
+  @@index([loteId], map: "Venda_loteId_fkey")
 }
 
-// Vendas
-model Venda {
-  id       Int      @id @default(autoincrement())
-  dataVenda DateTime @default(now())
-  valor    Float
-  
-  // Relação
-  loteId   Int
-  Lote     Lote     @relation(fields: [loteId], references: [id])
-}
-
-// Configurações do Sistema
 model Configuracao {
-  id       Int      @id @default(autoincrement())
-  chave    String   @unique
-  valor    String
+  id           Int      @id @default(autoincrement())
+  chave        String   @unique
+  valor        String
   atualizadoEm DateTime @default(now()) @updatedAt
 }
 
-// Notificações
 model Notificacao {
-  id          Int      @id @default(autoincrement())
-  titulo      String
-  mensagem    String
-  lida        Boolean  @default(false)
-  tipo        String   // 'alerta_animal', 'mensagem', 'sistema'
-  remetenteId Int
+  id             Int           @id @default(autoincrement())
+  titulo         String
+  mensagem       String
+  lida           Boolean       @default(false)
+  tipo           String
+  remetenteId    Int
   destinatarioId Int
-  loteId      Int?
-  boiId       Int?
-  respostaDeId Int?   // ID da notificação que esta é uma resposta
-  createdAt   DateTime @default(now())
-  
-  // Relações
-  remetente   User     @relation("NotificacoesEnviadas", fields: [remetenteId], references: [id])
-  destinatario User    @relation("NotificacoesRecebidas", fields: [destinatarioId], references: [id])
-  lote        Lote?    @relation(fields: [loteId], references: [id])
-  boi         Boi?      @relation(fields: [boiId], references: [id])
-  respostaDe  Notificacao? @relation("RespostasNotificacao", fields: [respostaDeId], references: [id])
-  respostas   Notificacao[] @relation("RespostasNotificacao")
+  loteId         Int?
+  boiId          Int?
+  respostaDeId   Int?
+  createdAt      DateTime      @default(now())
+  boi            Boi?          @relation(fields: [boiId], references: [id])
+  destinatario   User          @relation("NotificacoesRecebidas", fields: [destinatarioId], references: [id])
+  lote           Lote?         @relation(fields: [loteId], references: [id])
+  remetente      User          @relation("NotificacoesEnviadas", fields: [remetenteId], references: [id])
+  respostaDe     Notificacao?  @relation("RespostasNotificacao", fields: [respostaDeId], references: [id])
+  respostas      Notificacao[] @relation("RespostasNotificacao")
+
+  @@index([boiId], map: "Notificacao_boiId_fkey")
+  @@index([destinatarioId], map: "Notificacao_destinatarioId_fkey")
+  @@index([loteId], map: "Notificacao_loteId_fkey")
+  @@index([remetenteId], map: "Notificacao_remetenteId_fkey")
+  @@index([respostaDeId], map: "Notificacao_respostaDeId_fkey")
 }
