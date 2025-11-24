@@ -1,163 +1,203 @@
 # PastoSmart
 
-Sistema de gestão de gado para controle de lotes, pesagens, vacinações e vendas.
+Sistema web para gestão de gado, incluindo controle de lotes, pesagens, vacinações, vendas e alertas automatizados.
 
-## Sobre o Projeto
+---
 
-O PastoSmart é uma aplicação web desenvolvida para gerenciar a criação de gado, permitindo:
+## 1. Sobre o Projeto
 
-- **Gestão de Lotes**: Cadastro e acompanhamento de lotes de gado
-- **Controle de Bois**: Registro individual de animais com histórico de pesagens
-- **Vacinação**: Controle de vacinações por lote
-- **Vendas**: Registro de vendas com cálculo automático de lucro líquido
-- **Análise de Vendas**: Relatórios e gráficos de desempenho
-- **Alertas**: Notificações quando lotes atingem peso médio configurado para venda
-- **Relatórios**: Geração de relatórios em Excel
+O PastoSmart é uma plataforma desenvolvida para facilitar o gerenciamento de propriedades pecuárias. As principais funcionalidades incluem:
 
-O sistema possui dois níveis de acesso:
-- **Administrador**: Acesso completo a todas as funcionalidades
-- **Peão**: Acesso limitado para registro de dados operacionais
+- **Gestão de Lotes e Animais**
+- **Histórico de Pesagens**
+- **Controle de Vacinação**
+- **Registro de Vendas e Cálculo de Lucro**
+- **Alertas por Peso Médio**
+- **Gráficos e Relatórios**
+- **Recuperação de Senha via E-mail**
 
-## Tecnologias
+Níveis de acesso:
 
-- **Next.js 15** - Framework React com App Router
-- **React 19** - Biblioteca UI
-- **TypeScript** - Tipagem estática
-- **Prisma** - ORM para MySQL
-- **Tailwind CSS** - Estilização
-- **Recharts** - Gráficos e visualizações
-- **JWT** - Autenticação e autorização
+- **Administrador** — controle total do sistema  
+- **Peão** — acesso restrito às operações diárias
 
-## Requisitos
+---
 
-- Node.js 20 ou superior
-- MySQL 8.0 ou superior
+## 2. Tecnologias
+
+- Next.js 15 (App Router)
+- React 19
+- TypeScript
+- Prisma (MySQL)
+- Tailwind CSS
+- Recharts
+- JWT
+- Nodemailer
+
+---
+
+## 3. Requisitos
+
+- Node.js 20+
+- MySQL 8+
 - npm ou yarn
 
-## Instalação
+---
 
-1. Clone o repositório:
+## 4. Instalação
+
+### 4.1 Clonar o repositório
 ```bash
 git clone <url-do-repositorio>
 cd PastoSmart
 ```
 
-2. Instale as dependências:
+### 4.2 Instalar dependências
 ```bash
 npm install
 ```
 
-3. Configure as variáveis de ambiente. Crie um arquivo `.env` na raiz do projeto:
+### 4.3 Configurar variáveis de ambiente
+
+Crie um arquivo **.env.local**:
+
 ```env
-DATABASE_URL="mysql://usuario:senha@localhost:3306/pastosmart"
-JWT_SECRET="sua-chave-secreta-jwt-aqui"
-NODE_ENV="production"
+# Banco de dados
+DATABASE_URL="mysql://root:SUA_SENHA@127.0.0.1:3306/pastosmart_db"
+
+# JWT
+JWT_SECRET="uma_chave_secreta_muito_segura_aqui"
+
+# E-mail (recuperação de senha)
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USER=noreplypastosmart@gmail.com
+EMAIL_PASS=wilszwcbtzdslqlo
+EMAIL_FROM=noreplypastosmart@gmail.com
+
+# URL pública da aplicação
+NEXT_PUBLIC_BASE_URL=http://localhost:3000
 ```
 
-4. Execute as migrações do banco de dados:
+---
+
+## 5. Banco de Dados
+
+### Rodar migrações
 ```bash
-npx prisma migrate deploy
+npx prisma migrate dev
 ```
 
-5. Gere o cliente Prisma:
+### Gerar cliente Prisma
 ```bash
 npx prisma generate
 ```
 
-## Executando Localmente
+---
 
-Para desenvolvimento:
+## 6. Executando o Projeto
+
 ```bash
 npm run dev
 ```
 
-A aplicação estará disponível em `http://localhost:3000`
+A aplicação ficará disponível em **http://localhost:3000**  
+(O Next.js escolherá outra porta automaticamente se necessário.)
 
-## Build de Produção
+---
 
-1. Gere o build:
+## 7. Build de Produção
+
 ```bash
 npm run build
-```
-
-2. Inicie o servidor:
-```bash
 npm start
 ```
 
-## Deploy
+---
 
-### Vercel (Recomendado)
+## 8. Deploy (Vercel)
 
-1. Instale a CLI da Vercel:
+### 1. Instalar CLI
 ```bash
 npm i -g vercel
 ```
 
-2. Faça login:
+### 2. Login
 ```bash
 vercel login
 ```
 
-3. Configure o projeto:
+### 3. Deploy do projeto
 ```bash
 vercel
 ```
 
-4. Configure as variáveis de ambiente no painel da Vercel:
-   - `DATABASE_URL`: String de conexão MySQL
-   - `JWT_SECRET`: Chave secreta para JWT (use uma string aleatória forte)
-   - `NODE_ENV`: `production`
+### 4. Configurar variáveis de ambiente na Vercel
 
-5. Execute as migrações após o primeiro deploy:
+| Variável | Descrição |
+|----------|-----------|
+| DATABASE_URL | Conexão MySQL |
+| JWT_SECRET | Chave JWT |
+| EMAIL_HOST | SMTP |
+| EMAIL_PORT | Porta |
+| EMAIL_USER | Conta de envio |
+| EMAIL_PASS | Senha de app |
+| EMAIL_FROM | Remetente |
+| NEXT_PUBLIC_BASE_URL | URL pública |
+
+### 5. Executar migrações em produção
 ```bash
-vercel env pull .env.local
 npx prisma migrate deploy
 ```
 
-### Outros Provedores
+---
 
-Para deploy em outros provedores (Railway, Render, AWS, etc.):
+## 9. Recuperação de Senha – Fluxo
 
-1. Configure as variáveis de ambiente no painel do provedor
-2. Execute o build: `npm run build`
-3. Configure o comando de start: `npm start`
-4. Execute as migrações do Prisma após o primeiro deploy
+1. Usuário solicita redefinição em **/recuperar-senha**  
+2. Sistema envia e-mail com token  
+3. Usuário acessa **/redefinir-senha/[token]**  
+4. Senha é atualizada  
 
-**Importante**: Certifique-se de que o banco de dados MySQL está acessível a partir do ambiente de produção.
+---
 
-### Variáveis de Ambiente Obrigatórias
-
-- `DATABASE_URL`: String de conexão MySQL no formato `mysql://usuario:senha@host:porta/database`
-- `JWT_SECRET`: Chave secreta para assinatura de tokens JWT (mínimo 32 caracteres recomendado)
-
-### Variáveis Opcionais
-
-- `NODE_ENV`: Ambiente de execução (`development` ou `production`)
-- `NEXT_PUBLIC_API_URL`: URL base da API (padrão: `http://localhost:3000`)
-
-## Estrutura do Banco de Dados
-
-O sistema utiliza as seguintes tabelas principais:
-
-- `User`: Usuários do sistema (admin/peão)
-- `Lote`: Lotes de gado
-- `Boi`: Animais individuais
-- `PesoHistorico`: Histórico de pesagens
-- `Venda`: Registro de vendas
-- `Configuracao`: Configurações do sistema
-
-## Primeiro Acesso
-
-Após o deploy, crie o primeiro usuário administrador através da API ou diretamente no banco de dados:
+## 10. Criar Administrador Inicial
 
 ```sql
-INSERT INTO User (name, email, senha, role) 
-VALUES ('Admin', 'admin@example.com', 'senha123', 'admin');
+INSERT INTO User (name, email, senha, role)
+VALUES ('Admin', 'admin@example.com', 'admin123', 'admin');
 ```
 
-**Nota**: Em produção, implemente hash de senhas (bcrypt) antes de criar usuários.
+(Em produção, usar hash de senha.)
 
-## Suporte
+---
 
-Para problemas ou dúvidas, consulte a documentação do Next.js e Prisma.
+## 11. Estrutura do Projeto
+
+- `/src/app/api` – rotas da API  
+- `/src/app/(auth)` – autenticação  
+- `/src/app/adm` – dashboard administrativo  
+- `/src/app/peao` – módulo operacional  
+- `/src/generated/prisma` – cliente Prisma  
+
+---
+
+## 12. Contribuição
+
+```bash
+git checkout dev
+git pull
+git checkout -b feature/minha-feature
+```
+
+Após finalizar:
+
+```bash
+git add .
+git commit -m "Descrição da feature"
+git push origin feature/minha-feature
+```
+
+Criar PR → branch `dev`.
+
+---
